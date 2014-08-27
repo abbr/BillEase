@@ -9,7 +9,7 @@ In a large organization, a support division often provides ongoing services to o
   * Defining services and rates
   * Periodical (monthly, for example) metering
   * Calculating charges based on rates and meter readings at the end of each billing cycle
-  * Providing a *customer portal* for clients to retrieve their consumption and charges. 
+  * Providing a customer portal for clients to retrieve their consumption and charges. 
 
 *BillEase* is a service billing web application to support above trimmed down functions. It is not, however, intended to replace a corporate accounting system that tracks the flow of funds from one cost center to another.
 
@@ -56,12 +56,12 @@ Once above activities are performed, rest processes are handled automatically by
 Deleting an organization is disallowed unless all consumption records associated with the organization are deleted.
 #### Rates
 *Rates* define services and corresponding rates. It has following columns:
-  * Title - defines a service
-  * Unit Price - price rate
+  * Title - name of the service
+  * Unit Price
   * UOM - unit of measure
-  * Denominator - a number combined with UOM to form the denominator of the rate. Denominator is used for round-up calculation. For example, let's say the service being provided is data storage, and the price is $10 per 5GB per month. In this case Unit Price is $5, UOM is GB, and denominator is 5. When priced this way, consumption less than 5GB is rounded-up to 5GB. For instance, 6GB costs $20, as opposed to $12 if the rate is defined quasi-equivalently as $2 per GB per month.
+  * Denominator - a number combined with UOM to form the denominator of the rate. Denominator is used for round-up calculation. For example, let's say the service being provided is data storage, and the price is $10 per 5GB per month. In this case Unit Price is $10, UOM is GB, and denominator is 5. When priced this way, consumption is rounded-up at the incremental of 5GB. For instance, 6GB costs $20, as opposed to $12 if the rate is defined quasi-equivalently as $2 per GB per month.
 
-Changing *Unit Price* or *Denominator* only affects future charges. Deleting a rate entry is disallowed unless all consumption records associated with the rate are deleted.
+Changing *Unit Price* or *Denominator* only affects future charge calculations. Deleting a rate entry is disallowed unless all consumption records associated with the rate are deleted.
 
 #### Consumptions
 *Consumptions* list is used to upload meter readings. It has following columns:
@@ -86,9 +86,9 @@ Items in *Charges* list are created by *Invoice Run.exe*. There is a one-to-one 
   * Amount - either copied from *Consumptions* or, in absence of value, from formula *Unit Price\*Ceiling(Quantity/Denominator)*
   * Consumption Ref  - a hidden field referencing to the corresponding *Consumptions* item
 
-Notice that except for the hidden *Consumption Ref* column, all columns are copied from, rather than referencing to other lists. This *de-normalization* process prevents historical billing records from altering by external factors such as organization re-naming or price adjustment, resulting in improved accountability.
+Notice that except for the hidden *Consumption Ref* column, all columns are copied from, rather than referencing to other lists. This *de-normalization* process prevents historical billing records from altering by factors such as organization re-naming or price adjustment, resulting in improved accountability.
 
-By the same record-preserving principle, charge line items should be made read-only, except for site-collection administrators who have full access regardless of permissions. When a charge item is created, the permission of the item is broken from inheritance. Users who have read permissions defined in the *Charges* list can still read the item. In addition, users who belong to the *"&lt;prefix&gt;&lt;organization&gt;"* group are also granted read-only access. This makes the list security-trimmed and suitable to be exposed as a portal page to clients who can only see the charges belonging to their organization.
+By the same record-preserving principle, charge line items should be made read-only, except for site-collection administrators who have full access regardless of permissions. When a charge item is created, the permission of the item is broken from inheritance. Users who have read permissions defined in the *Charges* list at the time of broken can still read the item. In addition, users who belong to the *"&lt;prefix&gt;&lt;organization&gt;"* group are also granted read-only access. This makes the list security-trimmed and suitable to be exposed as a portal page to clients who can only see the charges belonging to their organization.
 
 ### Console Application
 The gem of *BillEase* is the console application *Invoice Run.exe*. It provides automation and turns the four SharePoint lists into a workable solution. Without it the SharePoint lists are merely data repository. *Invoice Run.exe* is intended to be launched by a scheduled task at the close of each billing cycle (by default first day of each month). For testing purpose it can also be launched manually and repetitively. When invoked, *Invoice Run.exe* performs following tasks:

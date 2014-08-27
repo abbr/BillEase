@@ -117,7 +117,7 @@
     <None Include="Invoice Run_TemporaryKey.pfx" />
     <None Include="packages.config" />
     <None Include="Properties\app.manifest" />
-    <None Include="Service References\BillingSite\service1.edmx" />
+    <None Include="Service References\BillingSite\service.edmx" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
@@ -130,8 +130,8 @@
   <ItemGroup>
     <None Include="Service References\BillingSite\Reference.datasvcmap">
       <Generator>DataServicesCoreClientGenerator</Generator>
-      <SubType>Designer</SubType>
       <LastGenOutput>Reference.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </None>
   </ItemGroup>
   <ItemGroup>

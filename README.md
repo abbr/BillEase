@@ -15,7 +15,7 @@ In a large organization, a support division often provides ongoing services to o
 
 ## Features
 
-  * Support both recurring and one-time charges and credits
+  * Support both recurring and one-time fixed rate charges and credits
   * Allow overriding calculated line item amount
   * Automatically prevent charges and consumption records in closed billing cycles from modifications
   * Features inherited from SharePoint

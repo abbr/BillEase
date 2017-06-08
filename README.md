@@ -139,11 +139,11 @@ Examples:
 8. Create a scheduled task to run *Invoice Run.exe* periodically. The account used to run the scheduled task should have adequate privilege to modify list items and permissions. Make the account a site collection administrator is recommended.
 9. (Developer only) If you want to customize source code of *BillEase* or compile *Invoice Run.exe* from source, replace all occurrences of *https://mycorp.com/Billings* in file *Invoice Run/Service References/BillingSite/Reference.datasvcmap* with the URL of the site created in Step 3, then open file */Service Billing.sln* in Visual Studio 2013.
 
-##License
+## License
 
 The MIT License (MIT)
 
-Copyright (c) 2014 
+Copyright (c) 2014 @abbr
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

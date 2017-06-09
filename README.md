@@ -39,12 +39,12 @@ In a large organization, a support division often provides ongoing services to o
 *BillEase* requires following manual processes performed by the service provider:
 
 1. One-time activities - performed first time as initial setup and update only when information changes thereafter.
-  1. Populate *Organizations* and *Rates*. 
-  2. For each *Organization*, create a SharePoint group named after it. A prefix is allowed. For example, if the organization is called *Marketing*, the corresponding SharePoint group should be called *Billing Group - Marketing*, assuming prefix is *Billing Group -*. The prefix has to be consistent. Change the group name whenever organization name changes.
-  3. Add client users who are allowed to see charges to an organization to the corresponding group.
+   1. Populate *Organizations* and *Rates*. 
+   2. For each *Organization*, create a SharePoint group named after it. A prefix is allowed. For example, if the organization is called *Marketing*, the corresponding SharePoint group should be called *Billing Group - Marketing*, assuming prefix is *Billing Group -*. The prefix has to be consistent. Change the group name whenever organization name changes.
+   3. Add client users who are allowed to see charges to an organization to the corresponding group.
 2. Recurring activities:
-  1. Near the end of each billing cycle, stage meter readings into an Excel spreadsheet with column order matching the *Consumptions* list view. Put any one-off charges or credits into the spreadsheet as well. 
-  2. Select the range of data in Excel and press Ctrl-C to copy. Open the *Datasheet View* of *Consumptions* list in Internet Explorer. click the second column (by default *Title*) of the last empty row in the *Datasheet View* marked by asterisk, and press Ctrl-V to paste the data range to the list. This completes the bulk loading process. Data uploaded can be modified as long as the billing cycle is not closed.
+   1. Near the end of each billing cycle, stage meter readings into an Excel spreadsheet with column order matching the *Consumptions* list view. Put any one-off charges or credits into the spreadsheet as well. 
+   2. Select the range of data in Excel and press Ctrl-C to copy. Open the *Datasheet View* of *Consumptions* list in Internet Explorer. click the second column (by default *Title*) of the last empty row in the *Datasheet View* marked by asterisk, and press Ctrl-V to paste the data range to the list. This completes the bulk loading process. Data uploaded can be modified as long as the billing cycle is not closed.
 
 Once above activities are performed, rest processes are handled automatically by *Invoice Run.exe*. Clients can see their charge line items in *Charges* list. They can export the list to Excel for further analysis.
 

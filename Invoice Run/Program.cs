@@ -35,9 +35,10 @@ namespace Invoice_Run
                 ServicePointManager.ServerCertificateValidationCallback = MyCertHandler;
                 var dc = new BillingsDataContext(new Uri(extraArgs[0] + "/_vti_bin/ListData.svc"));
                 dc.Credentials = System.Net.CredentialCache.DefaultCredentials;
+                var cycleDt = DateTime.Now.AddMonths(cycleMonthOffset);
                 var consumptions = from consumption in dc.Consumptions
-                                   where consumption.Cycle.Value.Month == DateTime.Now.Month + cycleMonthOffset
-                                   && consumption.Cycle.Value.Year == DateTime.Now.Year
+                                   where consumption.Cycle.Value.Month == cycleDt.Month
+                                   && consumption.Cycle.Value.Year == cycleDt.Year
                                    select consumption;
                 foreach (var consumption in consumptions)
                 {

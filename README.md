@@ -126,7 +126,7 @@ Examples:
 * Site collection administrator level of access to any edition of SharePoint 2010 (SharePoint 2013 may work, although not tested.)
 * Local administrator access to a server with .Net Framework 4 installed to run scheduled tasks. The server doesn't need to be the host of the SharePoint site. Windows Server 2008 R2 has been tested working.
 * Optionally Git client to download package
-* Optionally Visual Studio 2013 if you want to compile or change source code of  *Invoice Run.exe*
+* Optionally Visual Studio 2017 if you want to compile or change source code of  *Invoice Run.exe*
 
 ## Installation
 1. Use *Download Zip* button to download the latest version, or use Git client to clone the git repo. 

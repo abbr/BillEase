@@ -94,7 +94,7 @@ By the same record-preserving principle, charge line items should be made read-o
 The gem of *BillEase* is the console application *Invoice Run.exe*. It provides automation and turns the four SharePoint lists into a workable solution. Without it the SharePoint lists are merely data repository. *Invoice Run.exe* is intended to be launched by a scheduled task at the close of each billing cycle (by default first day of each month). For testing purpose it can also be launched manually and repetitively. When invoked, *Invoice Run.exe* performs following tasks:
 
 1. For each consumption item in previous billing cycle, create a charge item if not already exists. The values of charge item are copied or calculated using data directly or indirectly obtained from consumption item as described in [Charges](#charges) list above.
-2. Break the permission inheritance of each consumption item in previous billing cycle if not already done so. Then convert all read-write permissions to read-only.
+2. Break the permission inheritance of each consumption item in previous billing cycle if not already done so. Then convert all *Contribute* permissions to *Read*.
 3. Break the permission inheritance of each charge item created in previous billing cycle if not already done so. 
 4. For each charge item in previous billing cycle, grant group *"&lt;prefix&gt;&lt;organization&gt;"* read-only access if not already done so.
 
@@ -123,7 +123,7 @@ Examples:
   11:50PM on the last day of each month, for example.
 ```
 ## System Requirements and Access Privileges
-* Site collection administrator level of access to any edition of SharePoint 2010 (SharePoint 2013 may work, although not tested.)
+* Site collection administrator level of access to any edition of SharePoint 2010 or 2013.
 * Local administrator access to a server with .Net Framework 4 installed to run scheduled tasks. The server doesn't need to be the host of the SharePoint site. Windows Server 2008 R2 has been tested working.
 * Optionally Git client to download package
 * Optionally Visual Studio 2017 if you want to compile or change source code of  *Invoice Run.exe*
@@ -137,7 +137,7 @@ Examples:
 6. Copy all files under */Invoice Run/bin/Debug* to a server where *Invoice Run* scheduled task will be created. The server must have .Net Framework 4 installed. 
 7. Manually run *Invoice Run.exe* on the server with URL of the site created in Step 3. above and optional arguments documented in the [Console Application](#console-application) section above. The Windows log in account should be a site collection administrator as well as a local server administrator. If you run from a desktop version of Windows such as Vista with UAC, you have to run *Invoice Run.exe* from a DOS prompt started with "Run as administrator". If the run is successful, you should see new items created in *Charges* list with unique permissions. If the run fails, errors are output to both console and Windows event log.
 8. Create a scheduled task to run *Invoice Run.exe* periodically. The account used to run the scheduled task should have adequate privilege to modify list items and permissions. Make the account a site collection administrator is recommended.
-9. (Developer only) If you want to customize source code of *BillEase* or compile *Invoice Run.exe* from source, replace all occurrences of *https://mycorp.com/Billings* in file *Invoice Run/Service References/BillingSite/Reference.datasvcmap* with the URL of the site created in Step 3, then open file */Service Billing.sln* in Visual Studio 2013.
+9. (Developer only) If you want to customize source code of *BillEase* or compile *Invoice Run.exe* from source, replace all occurrences of *https://mycorp.com/Billings* in file *Invoice Run/Service References/BillingSite/Reference.datasvcmap* with the URL of the site created in Step 3, then open file */Service Billing.sln* in Visual Studio 2017.
 
 ## License
 

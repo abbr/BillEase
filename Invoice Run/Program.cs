@@ -136,7 +136,7 @@ namespace Invoice_Run
                         bool addRead = false;
                         foreach (var rdbo in ra.RoleDefinitionBindings)
                         {
-                            if (rdbo.Name != "Limited Access" && rdbo.Name != "Restricted Read")
+                            if (rdbo.Name == "Contribute")
                             {
                                 ra.RoleDefinitionBindings.Remove(rdbo);
                                 addRead = true;

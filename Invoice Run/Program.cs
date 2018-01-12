@@ -27,13 +27,19 @@ namespace Invoice_Run
             {
                 string groupPrefix = "";
                 int cycleMonthOffset = -1;
+                Dictionary<string, List<string>> listColumnsToCopy = new Dictionary<string, List<string>>();
+                listColumnsToCopy.Add("Organization", new List<string>());
+                listColumnsToCopy.Add("Rate", new List<string>());
                 var options = new OptionSet(){
                     {"p|prefix_of_group=", v => groupPrefix = v}
                     ,{"o|offset_of_cycle_month=", v => cycleMonthOffset = int.Parse(v)}
+                    ,{"g|organization_columns_to_copy=", v => listColumnsToCopy["Organization"].Add(v)}
+                    ,{"r|rate_columns_to_copy=", v => listColumnsToCopy["Rate"].Add(v)}
                 };
                 List<String> extraArgs = options.Parse(args);
                 ServicePointManager.ServerCertificateValidationCallback = MyCertHandler;
                 var dc = new BillingsDataContext(new Uri(extraArgs[0] + "/_vti_bin/ListData.svc"));
+                //dc.IgnoreMissingProperties = true;
                 dc.Credentials = System.Net.CredentialCache.DefaultCredentials;
                 var cycleDt = DateTime.Now.AddMonths(cycleMonthOffset);
                 var consumptions = from consumption in dc.Consumptions
@@ -68,6 +74,21 @@ namespace Invoice_Run
                     {
                         EventLog.WriteEntry(evtLogSrc, "Cannot calculate amount for consumption item #" + consumption.Id, EventLogEntryType.Error);
                     }
+                    foreach (KeyValuePair<string, List<string>> listColumnToCopy in listColumnsToCopy)
+                    {
+                        if (listColumnToCopy.Value.Count <= 0)
+                        {
+                            continue;
+                        }
+                        foreach (var columnNm in listColumnToCopy.Value)
+                        {
+                            var x = consumption.GetType().GetProperty(listColumnToCopy.Key).GetValue(consumption, null);
+                            var y = x.GetType().GetProperty(columnNm).GetValue(x, null);
+                            ci.GetType().GetProperty(columnNm).SetValue(ci, y, null);
+                        }
+
+                    }
+
                 }
                 dc.SaveChanges();
                 var cc = new ClientContext(extraArgs[0]);

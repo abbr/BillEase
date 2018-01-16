@@ -29,11 +29,13 @@ namespace Invoice_Run
                 Dictionary<string, List<string>> listColumnsToCopy = new Dictionary<string, List<string>>();
                 listColumnsToCopy.Add("Organization", new List<string>());
                 listColumnsToCopy.Add("Rate", new List<string>());
+                listColumnsToCopy.Add("Consumption", new List<string>());
                 var options = new OptionSet(){
                     {"p|prefix_of_group=", v => groupPrefix = v}
                     ,{"o|offset_of_cycle_month=", v => cycleMonthOffset = int.Parse(v)}
                     ,{"g|organization_columns_to_copy=", v => listColumnsToCopy["Organization"].Add(v)}
                     ,{"r|rate_columns_to_copy=", v => listColumnsToCopy["Rate"].Add(v)}
+                    ,{"c|consumption_columns_to_copy=", v => listColumnsToCopy["Consumption"].Add(v)}
                 };
                 List<String> extraArgs = options.Parse(args);
                 ServicePointManager.ServerCertificateValidationCallback = MyCertHandler;
@@ -142,6 +144,9 @@ namespace Invoice_Run
                                 break;
                             case "Organization":
                                 item = orgItem;
+                                break;
+                            case "Consumption":
+                                item = consumptionLI;
                                 break;
                         }
                         foreach (var columnNm in listColumnToCopy.Value)

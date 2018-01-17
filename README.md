@@ -110,6 +110,22 @@ where <URL> points to the site holding the four lists and [options] are
      if billing cycle starts on the first day of each month and Invoice Run 
      is launched at 12:01AM on the first day of each month, the default offset 
      of -1 is needed for calculation be performed on last month's data.
+-g|--organization_columns_to_copy=<string>
+     Name of custom column in organizations list to copy over to charges list. 
+	 Multiple columns can be defined by adding this option multiple times. The column
+	 must have been defined in both organizations and charges lists indentically in 
+	 terms of type and name.
+-r|--rate_columns_to_copy=<string>
+     Name of custom column in rates list to copy over to charges list. 
+	 Multiple columns can be defined by adding this option multiple times. The column
+	 must have been defined in both rates and charges lists indentically in 
+	 terms of type and name.
+-c|--consumption_columns_to_copy=<string>
+     Name of custom column in consumptions list to copy over to charges list. 
+	 Multiple columns can be defined by adding this option multiple times. The column
+	 must have been defined in both consumptions and charges lists indentically in 
+	 terms of type and name.
+
 
 Examples:
 "Invoice Run.exe" -p "Billing Group - " https://mycorp.com/service/billing
@@ -121,6 +137,9 @@ Examples:
   Set the offset of billing cycle month adjustment to 0. This is needed if billing 
   cycle starts on the first day of each month and Invoice Run is launched at
   11:50PM on the last day of each month, for example.
+"Invoice Run.exe" -c Comments -c Service_x0020_Date https://mycorp.com/service/billing
+  When creating charges items, copy Comments and Service_x0020_Date columns in consumptons 
+  list over to charges list.
 ```
 ## System Requirements and Access Privileges
 * Site collection administrator level of access to any edition of SharePoint 2010 or 2013.
@@ -137,7 +156,6 @@ Examples:
 6. Copy all files under */Invoice Run/bin/Debug* to a server where *Invoice Run* scheduled task will be created. The server must have .Net Framework 4 installed. 
 7. Manually run *Invoice Run.exe* on the server with URL of the site created in Step 3. above and optional arguments documented in the [Console Application](#console-application) section above. The Windows log in account should be a site collection administrator as well as a local server administrator. If you run from a desktop version of Windows such as Vista with UAC, you have to run *Invoice Run.exe* from a DOS prompt started with "Run as administrator". If the run is successful, you should see new items created in *Charges* list with unique permissions. If the run fails, errors are output to both console and Windows event log.
 8. Create a scheduled task to run *Invoice Run.exe* periodically. The account used to run the scheduled task should have adequate privilege to modify list items and permissions. Make the account a site collection administrator is recommended.
-9. (Developer only) If you want to customize source code of *BillEase* or compile *Invoice Run.exe* from source, replace all occurrences of *https://mycorp.com/Billings* in file *Invoice Run/Service References/BillingSite/Reference.datasvcmap* with the URL of the site created in Step 3, then open file */Service Billing.sln* in Visual Studio 2017.
 
 ## License
 

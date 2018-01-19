@@ -26,16 +26,25 @@ namespace Invoice_Run
             {
                 string groupPrefix = "";
                 int cycleMonthOffset = -1;
+                string accountsLstNm = "Accounts";
+                string ratesLstNm = "Rates";
+                string consumptionsLstNm = "Consumptions";
+                string chargesLstNm = "Charges";
+
                 Dictionary<string, List<string>> listColumnsToCopy = new Dictionary<string, List<string>>();
-                listColumnsToCopy.Add("Organization", new List<string>());
+                listColumnsToCopy.Add("Account", new List<string>());
                 listColumnsToCopy.Add("Rate", new List<string>());
                 listColumnsToCopy.Add("Consumption", new List<string>());
                 var options = new OptionSet(){
                     {"p|prefix_of_group=", v => groupPrefix = v}
                     ,{"o|offset_of_cycle_month=", v => cycleMonthOffset = int.Parse(v)}
-                    ,{"g|organization_columns_to_copy=", v => listColumnsToCopy["Organization"].Add(v)}
-                    ,{"r|rate_columns_to_copy=", v => listColumnsToCopy["Rate"].Add(v)}
-                    ,{"c|consumption_columns_to_copy=", v => listColumnsToCopy["Consumption"].Add(v)}
+                    ,{"a|accounts_list_name=", v => accountsLstNm = v}
+                    ,{"r|rates_list_name=", v => ratesLstNm = v}
+                    ,{"c|consumptions_list_name=", v => consumptionsLstNm = v}
+                    ,{"h|charges_list_name=", v => chargesLstNm = v}
+                    ,{"n|account_columns_to_copy=", v => listColumnsToCopy["Account"].Add(v)}
+                    ,{"t|rate_columns_to_copy=", v => listColumnsToCopy["Rate"].Add(v)}
+                    ,{"s|consumption_columns_to_copy=", v => listColumnsToCopy["Consumption"].Add(v)}
                 };
                 List<String> extraArgs = options.Parse(args);
                 ServicePointManager.ServerCertificateValidationCallback = MyCertHandler;
@@ -52,7 +61,7 @@ namespace Invoice_Run
    </Where>
 </Query></View>", DateTime.Now.AddMonths(cycleMonthOffset).ToString("yyyy-MM-01"));
 
-                var consumptionLst = cc.Web.Lists.GetByTitle("Consumptions");
+                var consumptionLst = cc.Web.Lists.GetByTitle(consumptionsLstNm);
                 var consumptionLIC = consumptionLst.GetItems(query);
                 cc.Load(consumptionLIC, items => items.IncludeWithDefaultProperties(
                     item => item["HasUniqueRoleAssignments"]
@@ -76,7 +85,7 @@ namespace Invoice_Run
       </Eq>
    </Where>
 </Query></View>", consumptionLI["ID"]);
-                    var chgLst = cc.Web.Lists.GetByTitle("Charges");
+                    var chgLst = cc.Web.Lists.GetByTitle(chargesLstNm);
                     var chgLIC = chgLst.GetItems(chgItemQuery);
                     cc.Load(chgLIC);
                     cc.ExecuteQuery();
@@ -95,8 +104,8 @@ namespace Invoice_Run
          <Value Type='Counter'>{0}</Value>
       </Eq>
    </Where>
-</Query></View>", ((FieldLookupValue)consumptionLI["Organization"]).LookupId);
-                    var orgLst = cc.Web.Lists.GetByTitle("Organizations");
+</Query></View>", ((FieldLookupValue)consumptionLI["Account"]).LookupId);
+                    var orgLst = cc.Web.Lists.GetByTitle(accountsLstNm);
                     var orgLIC = orgLst.GetItems(orgItemQuery);
                     cc.Load(orgLIC);
                     // get rate item
@@ -109,7 +118,7 @@ namespace Invoice_Run
       </Eq>
    </Where>
 </Query></View>", ((FieldLookupValue)consumptionLI["Rate"]).LookupId);
-                    var rateLst = cc.Web.Lists.GetByTitle("Rates");
+                    var rateLst = cc.Web.Lists.GetByTitle(ratesLstNm);
                     var rateLIC = rateLst.GetItems(rateItemQuery);
                     cc.Load(rateLIC);
                     cc.ExecuteQuery();
@@ -119,7 +128,7 @@ namespace Invoice_Run
                     // create new charges item
                     ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
                     var newChgItem = chgLst.AddItem(itemCreateInfo);
-                    newChgItem["Organization"] = orgItem["Title"];
+                    newChgItem["Account"] = orgItem["Title"];
                     newChgItem["Title"] = consumptionLI["Title"];
                     newChgItem["Cycle"] = consumptionLI["Cycle"];
                     newChgItem["Unit_x0020_Price"] = rateItem["Unit_x0020_Price"];
@@ -142,7 +151,7 @@ namespace Invoice_Run
                             case "Rate":
                                 item = rateItem;
                                 break;
-                            case "Organization":
+                            case "Account":
                                 item = orgItem;
                                 break;
                             case "Consumption":
@@ -213,7 +222,7 @@ namespace Invoice_Run
                 var chargesLst = cc.Web.Lists.GetByTitle("Charges");
                 var chargesLIC = chargesLst.GetItems(query);
                 cc.Load(chargesLIC, items => items.Include(
-                    item => item["Organization"]
+                    item => item["Account"]
                     , item => item["HasUniqueRoleAssignments"]
                     ));
                 cc.ExecuteQuery();
@@ -225,7 +234,7 @@ namespace Invoice_Run
                     }
                     foreach (var g in gc)
                     {
-                        if (g.LoginName == (groupPrefix + chargeLI["Organization"].ToString()))
+                        if (g.LoginName == (groupPrefix + chargeLI["Account"].ToString()))
                         {
                             var rdb = new RoleDefinitionBindingCollection(cc);
                             rdb.Add(restReadRD);

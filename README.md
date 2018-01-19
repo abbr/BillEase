@@ -29,7 +29,7 @@ In a large organization, a support division often provides ongoing services to o
 
 ## Overview
 *BillEase* consists of four SharePoint custom lists packaged into a SharePoint site template solution file *Service Billing.wsp* and a console application called *Invoice Run.exe*. The custom lists are:
-  * *Organizations* - contain client information
+  * *Accounts* - contain client information
   * *Rates* - define services and corresponding rates
   * *Consumptions* - used to upload meter readings
   * *Charges* - line items with amount computed from rates and consumption. 
@@ -39,9 +39,9 @@ In a large organization, a support division often provides ongoing services to o
 *BillEase* requires following manual processes performed by the service provider:
 
 1. One-time activities - performed first time as initial setup and update only when information changes thereafter.
-   1. Populate *Organizations* and *Rates*. 
-   2. For each *Organization*, create a SharePoint group named after it. A prefix is allowed. For example, if the organization is called *Marketing*, the corresponding SharePoint group should be called *Billing Group - Marketing*, assuming prefix is *Billing Group -*. The prefix has to be consistent. Change the group name whenever organization name changes.
-   3. Add client users who are allowed to see charges to an organization to the corresponding group.
+   1. Populate *Accounts* and *Rates*. 
+   2. For each *Account*, create a SharePoint group named after it. A prefix is allowed. For example, if the account is called *Marketing*, the corresponding SharePoint group should be called *Billing Group - Marketing*, assuming prefix is *Billing Group -*. The prefix has to be consistent. Change the group name whenever account name changes.
+   3. Add client users who are allowed to see charges to an account to the corresponding group.
 2. Recurring activities:
    1. Near the end of each billing cycle, stage meter readings into an Excel spreadsheet with column order matching the *Consumptions* list view. Put any one-off charges or credits into the spreadsheet as well. 
    2. Select the range of data in Excel and press Ctrl-C to copy. Open the *Datasheet View* of *Consumptions* list in Internet Explorer. click the second column (by default *Title*) of the last empty row in the *Datasheet View* marked by asterisk, and press Ctrl-V to paste the data range to the list. This completes the bulk loading process. Data uploaded can be modified as long as the billing cycle is not closed.
@@ -51,9 +51,9 @@ Once above activities are performed, rest processes are handled automatically by
 ## Components
 ### SharePoint Custom Lists
 *BillEase* depends on list and column names described below to function. Extending the lists are allowed as long as these names are not altered.
-#### Organizations
-*Organizations* contain client information. Only *Name* column is mandatory. Changing the name of an organization is allowed. However, the value of *Organization* column in *Charges* list is copied from, not referencing to, the *Name* column of *Organizations* list, so the organization name change will not propagate to *Charges* list.
-Deleting an organization is disallowed unless all consumption records associated with the organization are deleted.
+#### Accounts
+*Accounts* contain client information. Only *Name* column is mandatory. Changing the name of an account is allowed. However, the value of *Account* column in *Charges* list is copied from, not referencing to, the *Name* column of *Accounts* list, so the account name change will not propagate to *Charges* list.
+Deleting an account is disallowed unless all consumption records associated with the account are deleted.
 #### Rates
 *Rates* define services and corresponding rates. It has following columns:
   * Title - name of the service
@@ -66,7 +66,7 @@ Changing *Unit Price* or *Denominator* only affects future charge calculations. 
 #### Consumptions
 *Consumptions* list is used to upload meter readings. It has following columns:
   * Title - consumption title. This becomes the charge line item description.
-  * Organization - a reference to the organization
+  * Account - a reference to the account
   * Rate - a reference to the rate
   * Quantity - consumption data. UOM should match that of rate referenced
   * Cycle - the  start of billing cycle. The first day of current month is populated by default.
@@ -77,7 +77,7 @@ Consumption items are modifiable prior to the closing date of billing cycle and 
 #### Charges
 Items in *Charges* list are created by *Invoice Run.exe*. There is a one-to-one mapping between *Consumptions* and *Charges*. *Charges* contain following columns:
   * Title - copied from  *Consumptions*
-  * Organization - copied from *Consumptions*
+  * Account - copied from *Consumptions*
   * Cycle - copied from *Consumptions*
   * Unit Price - copied from *Rates* referenced by the corresponding *Consumptions* item
   * Denominator - copied from *Rates* referenced by the corresponding *Consumptions* item
@@ -86,9 +86,9 @@ Items in *Charges* list are created by *Invoice Run.exe*. There is a one-to-one 
   * Amount - either copied from *Consumptions* or, in absence of value, calculated using formula *Unit Price\*Ceiling(Quantity/Denominator)*
   * Consumption Ref  - a hidden field referencing to the corresponding *Consumptions* item
 
-Notice that except for the hidden *Consumption Ref* column, all columns are copied from, rather than referencing to other lists. This *de-normalization* process prevents historical billing records from altering by factors such as organization re-naming or price adjustment, resulting in improved accountability.
+Notice that except for the hidden *Consumption Ref* column, all columns are copied from, rather than referencing to other lists. This *de-normalization* process prevents historical billing records from altering by factors such as account re-naming or price adjustment, resulting in improved accountability.
 
-By the same record-preserving principle, charge line items should be made read-only, except for site-collection administrators who have full access regardless of permissions. When a charge item is created, the permission of the item is broken from inheritance. Users who have read permissions defined in the *Charges* list at the time of broken can still read the item. In addition, users who belong to the *"&lt;prefix&gt;&lt;organization&gt;"* group are also granted read-only access. This makes the list security-trimmed and suitable to be exposed as a portal page to clients who can only see the charges applied to their organization.
+By the same record-preserving principle, charge line items should be made read-only, except for site-collection administrators who have full access regardless of permissions. When a charge item is created, the permission of the item is broken from inheritance. Users who have read permissions defined in the *Charges* list at the time of broken can still read the item. In addition, users who belong to the *"&lt;prefix&gt;&lt;account&gt;"* group are also granted read-only access. This makes the list security-trimmed and suitable to be exposed as a portal page to clients who can only see the charges applied to their account.
 
 ### Console Application
 The gem of *BillEase* is the console application *Invoice Run.exe*. It provides automation and turns the four SharePoint lists into a workable solution. Without it the SharePoint lists are merely data repository. *Invoice Run.exe* is intended to be launched by a scheduled task at the close of each billing cycle (by default first day of each month). For testing purpose it can also be launched manually and repetitively. When invoked, *Invoice Run.exe* performs following tasks:
@@ -96,41 +96,49 @@ The gem of *BillEase* is the console application *Invoice Run.exe*. It provides 
 1. For each consumption item in previous billing cycle, create a charge item if not already exists. The values of charge item are copied or calculated using data directly or indirectly obtained from consumption item as described in [Charges](#charges) list above.
 2. Break the permission inheritance of each consumption item in previous billing cycle if not already done so. Then convert all *Contribute* permissions to *Read*.
 3. Break the permission inheritance of each charge item created in previous billing cycle if not already done so. 
-4. For each charge item in previous billing cycle, grant group *"&lt;prefix&gt;&lt;organization&gt;"* read-only access if not already done so.
+4. For each charge item in previous billing cycle, grant group *"&lt;prefix&gt;&lt;account&gt;"* read-only access if not already done so.
 
 *Invoice Run.exe* expects following call syntax:
 ```
 "Invoice Run.exe" [options] <URL>
 where <URL> points to the site holding the four lists and [options] are
 -p|--prefix_of_group=<string>
-     Prefix of the client organization groups. The prefix is useful to 
-     prevent group name conflicts with other groups defined in same site collection
+	Prefix of the account groups. The prefix is useful to 
+    prevent group name conflicts with other groups defined in same site collection
 -o|--offset_of_cycle_month=<number>
-     Offset of billing cycle month adjustment. Default to -1. For example, 
-     if billing cycle starts on the first day of each month and Invoice Run 
-     is launched at 12:01AM on the first day of each month, the default offset 
-     of -1 is needed for calculation be performed on last month's data.
--g|--organization_columns_to_copy=<string>
-     Name of custom column in organizations list to copy over to charges list. 
-	 Multiple columns can be defined by adding this option multiple times. The column
-	 must have been defined in both organizations and charges lists indentically in 
-	 terms of type and name.
--r|--rate_columns_to_copy=<string>
-     Name of custom column in rates list to copy over to charges list. 
-	 Multiple columns can be defined by adding this option multiple times. The column
-	 must have been defined in both rates and charges lists indentically in 
-	 terms of type and name.
--c|--consumption_columns_to_copy=<string>
-     Name of custom column in consumptions list to copy over to charges list. 
-	 Multiple columns can be defined by adding this option multiple times. The column
-	 must have been defined in both consumptions and charges lists indentically in 
-	 terms of type and name.
+	Offset of billing cycle month adjustment. Default to -1. For example, 
+	if billing cycle starts on the first day of each month and Invoice Run 
+	is launched at 12:01AM on the first day of each month, the default offset 
+	of -1 is needed for calculation be performed on last month's data.
+-a|--accounts_list_name=<string>
+	Name of accounts list if renamed.
+-r|--rates_list_name=<string>
+	Name of rates list if renamed.
+-c|--consumptions_list_name=<string>
+	Name of consumptions list if renamed.
+-h|--charges_list_name=<string>
+	Name of charges list if renamed.
+-n|--account_columns_to_copy=<string>
+	Name of custom column in accounts list to copy over to charges list. 
+	Multiple columns can be defined by adding this option multiple times. The column
+	must have been defined in both accounts and charges lists indentically in 
+	terms of type and name.
+-t|--rate_columns_to_copy=<string>
+	Name of custom column in rates list to copy over to charges list. 
+	Multiple columns can be defined by adding this option multiple times. The column
+	must have been defined in both rates and charges lists indentically in 
+	terms of type and name.
+-s|--consumption_columns_to_copy=<string>
+    Name of custom column in consumptions list to copy over to charges list. 
+	Multiple columns can be defined by adding this option multiple times. The column
+	must have been defined in both consumptions and charges lists indentically in 
+	terms of type and name.
 
 
 Examples:
 "Invoice Run.exe" -p "Billing Group - " https://mycorp.com/service/billing
   Set the prefix of all SharePoint groups used to grant clients accessing 
-  the Charges table to "Billing Group - ". Client users from organization 
+  the Charges table to "Billing Group - ". Client users from account 
   Marketing, for example, should be placed in a SharePoint group 
   called "Billing Group - Marketing" 
 "Invoice Run.exe" -o 0 https://mycorp.com/service/billing
@@ -151,7 +159,7 @@ Examples:
 1. Use *Download Zip* button to download the latest version, or use Git client to clone the git repo. 
 2.  Upload file *Service Billing.wsp* to SharePoint site collection solution gallery and activate it. 
 3. Create a site using *Service Billing* site template contained in *Service Billing.wsp*. You may need to active certain site collection features first.
-4. Define permissions of each list appropriately. Users from service provider organization, depending on job roles, should have read-only permission to *Charges* and read-write permission to *Organizations*, *Rates* and *Consumptions*. Don't grant any permission to clients at list level.
+4. Define permissions of each list appropriately. Users from service provider organization, depending on job roles, should have read-only permission to *Charges* and read-write permission to *Accounts*, *Rates* and *Consumptions*. Don't grant any permission to clients at list level.
 5. Follow manual processes in [Overview](#overview) section to populate lists and SharePoint groups. Create some fake data in *Consumptions* list in order to verify the function.
 6. Copy all files under */Invoice Run/bin/Debug* to a server where *Invoice Run* scheduled task will be created. The server must have .Net Framework 4 installed. 
 7. Manually run *Invoice Run.exe* on the server with URL of the site created in Step 3. above and optional arguments documented in the [Console Application](#console-application) section above. The Windows log in account should be a site collection administrator as well as a local server administrator. If you run from a desktop version of Windows such as Vista with UAC, you have to run *Invoice Run.exe* from a DOS prompt started with "Run as administrator". If the run is successful, you should see new items created in *Charges* list with unique permissions. If the run fails, errors are output to both console and Windows event log.

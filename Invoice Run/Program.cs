@@ -187,7 +187,7 @@ namespace Invoice_Run
                     }
                     else
                     {
-                        EventLog.WriteEntry(evtLogSrc, "Cannot calculate amount for consumption item #" + consumptionLI["Id"], EventLogEntryType.Error);
+                        EventLog.WriteEntry(evtLogSrc, "Cannot calculate amount for consumption item " + consumptionLI["ID"], EventLogEntryType.Error);
                     }
 
                     if (!consumptionLI.HasUniqueRoleAssignments)

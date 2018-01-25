@@ -15,7 +15,7 @@ namespace Invoice_Run
 {
 	class Program
 	{
-		const string evtLogSrc = "Service Billing Invoice Run";
+		const string evtLogSrc = "BillEase";
 		static void Main(string[] args)
 		{
 			if (!EventLog.SourceExists(evtLogSrc))

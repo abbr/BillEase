@@ -102,9 +102,9 @@ By the same record-preserving principle, charge line items should be made read-o
 *Fixed Consumptions* list is used to define consumptions of pre-determined quantities. When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  [<*Service Start*>, <*Service End*>) overlapping the billing period by copying columns exist in both lists. The *Consumptions* list must also contain following additional columns that *Invoice Run.exe* will populate:
 
 * *Cycle* is set to billing cycle start date. 
-* *Fixed Consumption Ref* is set to a reference to the fixed consumption item. *Invoice Run.exe* relies on this column to avoid generating multiple consumption items in the same billing cycle in case *Invoice Run.exe* has to be executed repetitively for the billing period.
+* *Fixed Consumption Ref* is set to a reference to the fixed consumption item. *Invoice Run.exe* relies on this column to avoid generating multiple consumption items in the same billing cycle in case *Invoice Run.exe* has to be executed repetitively.
 
-Note *Service Start* is inclusive and *Service End* is exclusive. Missing *Service Start* implies a distant past; missing *Service End* implies distant future. Proration is not supported. You can implement proration by adding an one-off credit line item manually.
+Note *Service Start* is inclusive and *Service End* is exclusive. Missing *Service Start* implies a distant past; missing *Service End* implies a distant future. Proration is not supported. You can implement proration by adding an one-off credit line item manually.
 
 ### Console Application
 The gem of *BillEase* is the console application *Invoice Run.exe*. It provides automation and turns the five SharePoint lists into a workable solution. Without it the SharePoint lists are merely data repository. *Invoice Run.exe* is intended to be launched by a scheduled task at the close of each billing cycle (by default first day of each month). For testing purpose it can also be launched manually and repetitively. When invoked, *Invoice Run.exe* performs following tasks:
@@ -129,7 +129,7 @@ where <URL> points to the site holding the four lists and [options] are
 	of -1 is needed for calculation be performed on last month's data.
 -b|--billing_period=<string>
 	Billing period in the form <Integer><UOM>. Default to 1m. Allowed UOMs are 
-	<d|m|y> for day, month and year. For example, 1m for 1 month; 14d for 2 weeks etc.
+	<d|m|y> for day, month and year respectively. For example, 1m for 1 month; 14d for 2 weeks; 3m for a quarter.
 -a|--accounts_list_name=<string>
 	Name of accounts list if renamed.
 -r|--rates_list_name=<string>

@@ -9,6 +9,7 @@ using NDesk.Options;
 using System.Security.Cryptography.X509Certificates;
 using System.Net.Security;
 using System.Net;
+using System.Text.RegularExpressions;
 
 namespace Invoice_Run
 {
@@ -28,8 +29,10 @@ namespace Invoice_Run
                 int cycleMonthOffset = -1;
                 string accountsLstNm = "Accounts";
                 string ratesLstNm = "Rates";
+                string fixedConsumptionsLstNm = "Fixed Consumptions";
                 string consumptionsLstNm = "Consumptions";
                 string chargesLstNm = "Charges";
+                string billingPeriodStr = "1m";
 
                 Dictionary<string, List<string>> listColumnsToCopy = new Dictionary<string, List<string>>();
                 listColumnsToCopy.Add("Account", new List<string>());
@@ -38,8 +41,10 @@ namespace Invoice_Run
                 var options = new OptionSet(){
                     {"p|prefix_of_group=", v => groupPrefix = v}
                     ,{"o|offset_of_cycle_month=", v => cycleMonthOffset = int.Parse(v)}
+                    ,{"b|billing_period=", v => billingPeriodStr = v}
                     ,{"a|accounts_list_name=", v => accountsLstNm = v}
                     ,{"r|rates_list_name=", v => ratesLstNm = v}
+                    ,{"f|fixed_consumptions_list_name=", v => fixedConsumptionsLstNm = v}
                     ,{"c|consumptions_list_name=", v => consumptionsLstNm = v}
                     ,{"h|charges_list_name=", v => chargesLstNm = v}
                     ,{"n|account_columns_to_copy=", v => listColumnsToCopy["Account"].Add(v)}
@@ -50,7 +55,124 @@ namespace Invoice_Run
                 ServicePointManager.ServerCertificateValidationCallback = MyCertHandler;
                 var cc = new ClientContext(extraArgs[0]);
                 cc.Credentials = System.Net.CredentialCache.DefaultCredentials;
+                var billingCycleStart = DateTime.Now.AddMonths(cycleMonthOffset);
+                billingCycleStart = new DateTime(billingCycleStart.Year, billingCycleStart.Month, 1);
+                Match billingPeriodMatch = Regex.Match(billingPeriodStr, @"(\d)([mdy])");
+                int billingPeriod = 0;
+                string billingPeriodUOM = null;
+                if (billingPeriodMatch.Success)
+                {
+                    billingPeriod = Int32.Parse(billingPeriodMatch.Groups[1].Value);
+                    billingPeriodUOM = billingPeriodMatch.Groups[2].Value;
+                }
+                DateTime nextBillingcycleStart = DateTime.Now;
+                switch (billingPeriodUOM)
+                {
+                    case "d":
+                        nextBillingcycleStart = billingCycleStart.AddDays(billingPeriod);
+                        break;
+                    case "m":
+                        nextBillingcycleStart = billingCycleStart.AddMonths(billingPeriod);
+                        break;
+                    case "y":
+                        nextBillingcycleStart = billingCycleStart.AddYears(billingPeriod);
+                        break;
+                }
                 var query = new CamlQuery();
+                query.ViewXml = string.Format(@"
+<View><Query>
+   <Where>
+     <And>
+        <Or>
+          <IsNull>
+             <FieldRef Name='Service_x0020_Start' />
+          </IsNull>
+          <Lt>
+             <FieldRef Name='Service_x0020_Start' />
+             <Value Type='DateTime'>{0}</Value>
+          </Lt>
+        </Or>
+        <Or>
+          <IsNull>
+             <FieldRef Name='Service_x0020_End' />
+          </IsNull>
+          <Gt>
+             <FieldRef Name='Service_x0020_End' />
+             <Value Type='DateTime'>{1}</Value>
+          </Gt>
+        </Or>
+     </And>
+   </Where>
+</Query></View>", nextBillingcycleStart.ToString("yyyy-MM-dd"), billingCycleStart.ToString("yyyy-MM-dd"));
+                var fixedConsumptionsLst = cc.Web.Lists.GetByTitle(fixedConsumptionsLstNm);
+                var fixedConsumptionLIC = fixedConsumptionsLst.GetItems(query);
+                FieldCollection fixedConsumptionFC = fixedConsumptionsLst.Fields;
+                cc.Load(fixedConsumptionFC);
+                cc.Load(fixedConsumptionLIC);
+                var consumptionLst = cc.Web.Lists.GetByTitle(consumptionsLstNm);
+                var consumptionFC = consumptionLst.Fields;
+                cc.Load(consumptionFC);
+                try
+                {
+                    cc.ExecuteQuery();
+                    foreach (var fixedConsumptionLI in fixedConsumptionLIC)
+                    {
+                        // check if consumption exists for the current billing cycle
+                        var consumptionItemQuery = new CamlQuery();
+                        consumptionItemQuery.ViewXml = string.Format(@"
+<View><Query>
+   <Where>
+    <And>
+        <Eq>
+            <FieldRef Name='Fixed_x0020_Consumption_x0020_Re' LookupId='TRUE' />
+            <Value Type='Lookup'>{0}</Value>
+        </Eq>
+        <Eq>
+            <FieldRef Name='Cycle' />
+            <Value Type='DateTime'>{1}</Value>
+        </Eq>
+    </And>
+   </Where>
+</Query></View>", fixedConsumptionLI["ID"], billingCycleStart.ToString("yyyy-MM-dd"));
+                        var _consumptionLIC = consumptionLst.GetItems(consumptionItemQuery);
+                        cc.Load(_consumptionLIC);
+                        cc.ExecuteQuery();
+                        if (_consumptionLIC.Count > 0)
+                        {
+                            continue;
+                        }
+
+                        ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+                        var newConsumptionItem = consumptionLst.AddItem(itemCreateInfo);
+                        foreach (Field field in fixedConsumptionFC)
+                        {
+                            if (field.FromBaseType && field.InternalName != "Title")
+                            {
+                                continue;
+                            }
+
+                            if (consumptionFC.FirstOrDefault(f =>
+                                 (!f.FromBaseType || f.InternalName == "Title") && f.InternalName == field.InternalName
+                            ) == null)
+                            {
+                                continue;
+                            }
+                            newConsumptionItem[field.InternalName] = fixedConsumptionLI[field.InternalName];
+                        }
+                        newConsumptionItem["Cycle"] = billingCycleStart;
+                        FieldLookupValue lookup = new FieldLookupValue();
+                        lookup.LookupId = (int)fixedConsumptionLI["ID"];
+                        newConsumptionItem["Fixed_x0020_Consumption_x0020_Re"] = lookup;
+                        newConsumptionItem.Update();
+                        cc.ExecuteQuery();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    EventLog.WriteEntry(evtLogSrc, string.Format("Error creating consumption from fixed consumption.\n{0}", ex.ToString()), EventLogEntryType.Error);
+                }
+
+                query = new CamlQuery();
                 query.ViewXml = string.Format(@"
 <View><Query>
    <Where>
@@ -59,9 +181,8 @@ namespace Invoice_Run
          <Value Type='DateTime'>{0}</Value>
       </Eq>
    </Where>
-</Query></View>", DateTime.Now.AddMonths(cycleMonthOffset).ToString("yyyy-MM-01"));
+</Query></View>", billingCycleStart.ToString("yyyy-MM-dd"));
 
-                var consumptionLst = cc.Web.Lists.GetByTitle(consumptionsLstNm);
                 var consumptionLIC = consumptionLst.GetItems(query);
                 cc.Load(consumptionLIC, items => items.IncludeWithDefaultProperties(
                     item => item["HasUniqueRoleAssignments"]
@@ -72,6 +193,8 @@ namespace Invoice_Run
                 cc.ExecuteQuery();
                 var restReadRD = cc.Web.RoleDefinitions.GetByName("Restricted Read");
                 var readRD = cc.Web.RoleDefinitions.GetByName("Read");
+                var chgLst = cc.Web.Lists.GetByTitle(chargesLstNm);
+
                 foreach (var consumptionLI in consumptionLIC)
                 {
                     // check if charges exists
@@ -85,7 +208,6 @@ namespace Invoice_Run
       </Eq>
    </Where>
 </Query></View>", consumptionLI["ID"]);
-                    var chgLst = cc.Web.Lists.GetByTitle(chargesLstNm);
                     var chgLIC = chgLst.GetItems(chgItemQuery);
                     cc.Load(chgLIC);
                     cc.ExecuteQuery();

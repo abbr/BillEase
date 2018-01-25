@@ -78,7 +78,7 @@ Changing *Unit Price* or *Denominator* only affects future charge calculations. 
   * Amount - used to override calculated amount. This column is useful to post one-off type of charges or credits. When this column is populated, *Quantity* doesn't need to be populated. Even if *Quantity* is populated, the quantity will not be used.
   * Service Start - optional start date of the service
   * Service End - optional end date of the service
-  * Fixed Consumption Ref - if the consumption item is auto-populated from *Fixed Consumptions* by *Invoice Run.exe*, this field contains a reference to the corrseponding fixed consumption item. For manully uploaded consumption item, leave this field empty. 
+  * Fixed Consumption Ref - if the consumption item is auto-populated from *Fixed Consumptions* by *Invoice Run.exe*, this hidden field contains a reference to the corrseponding fixed consumption item.
 
 Consumption items are modifiable by users with *Contribute* permission prior to the closing date of billing cycle and read-only thereafter. Deleting a consumption item of a closed billing cycle is disallowed unless the corresponding charge item is deleted.
  

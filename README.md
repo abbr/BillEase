@@ -37,15 +37,23 @@ In a large organization, a support division often provides ongoing services to o
 
 *Invoice Run.exe* is intended to be put into a scheduled task to run at the end of each billing cycle to create charge line items.
 
+*BillEase* is intended to be accessed by four types of users with following permissions:
+
+1. Administrator (owner) from service provider - full control to entire site.
+2. Contributor (member) from service provider - full read access to entire site plus write access to *Consumptions* list. This type should contain service delivery unit personnel.
+3. Visitor - full read access to entire site. This can be accountants from service provider or external auditors, for example.
+4. Client - read access to security trimmed *Charges* list.
+
 *BillEase* requires following manual processes performed by the service provider:
 
-1. One-time activities - performed first time as initial setup and update only when information changes thereafter.
+1. One-time activities - performed first time as initial setup and update only when information changes thereafter by administrator.
    1. Populate *Accounts* and *Rates*. 
-   2. For each *Account*, create a SharePoint group named after it. A prefix is allowed. For example, if the account is called *Marketing*, the corresponding SharePoint group should be called *Billing Group - Marketing*, assuming prefix is *Billing Group -*. The prefix has to be consistent. Change the group name whenever account name changes.
-   3. Add client users who are allowed to see charges to an account to the corresponding group.
-   4. (Optional) Populate pre-defined fixed-quantity consumptions in *Fixed Consumptions* list
+   2. For each *Account*, create a SharePoint group named after it. A prefix is allowed. For example, if the account is called *Marketing*, the corresponding SharePoint group should be called *Billing Group - Marketing*, assuming prefix is *Billing Group -*. The prefix has to be consistent. Change the group name whenever account name changes. Don't grant the group any permission to the site.
+   3. Add client users who are allowed to see charges to an account to the corresponding groups.
+   4. Setup and adjust permissions as needed. For example, when creating the SharePoint site from solution, by default site contributors have write permission to all lists. To match the access permission described above, you may want to change the default permission to read-only, then grant contributors write access to *Consumptions* list by breaking the permission inheritance.
+   5. (Optional) Populate pre-defined fixed-quantity consumptions in *Fixed Consumptions* list
 2. Recurring activities:
-   1. Near the end of each billing cycle, stage meter readings into an Excel spreadsheet with column order matching the *Consumptions* list view. Put any one-off charges or credits into the spreadsheet as well. 
+   1. Near the end of each billing cycle, stage meter readings except for *Fixed Consumptions* into an Excel spreadsheet with column order matching the *Consumptions* list view.
    2. Select the range of data in Excel and press Ctrl-C to copy. Open the *Datasheet View* of *Consumptions* list in Internet Explorer. click the second column (by default *Title*) of the last empty row in the *Datasheet View* marked by asterisk, and press Ctrl-V to paste the data range to the list. This completes the bulk loading process. Data uploaded can be modified as long as the billing cycle is not closed.
 
 Once above activities are performed, rest processes are handled automatically by *Invoice Run.exe*. Clients can see their charge line items in *Charges* list. They can export the list to Excel for further analysis.
@@ -60,11 +68,11 @@ Once above activities are performed, rest processes are handled automatically by
 Deleting an account is disallowed unless all consumption items associated with the account are deleted.
 
 #### Rates
-*Rates* define services and corresponding rates. It has following columns:
-  * Title - name of the service
+*Rates* define billable line item types and corresponding rates. It has following columns:
+  * Title - name of the billable line item type. This could be the service name if the line item type is service specific.
   * Unit Price
   * UOM - unit of measure
-  * Denominator - a number combined with UOM to form the denominator of the rate. Denominator is used for round-up calculation. For example, let's say the service being provided is data storage, and the price is $10 per 5GB per month. In this case Unit Price is $10, UOM is GB, and denominator is 5. When priced this way, consumption is rounded-up at the incremental of 5GB. For instance, 6GB costs $20, as opposed to $12 if the rate is defined quasi-equivalently as $2 per GB per month.
+  * Denominator - a number combined with UOM to form the denominator of the rate. Denominator is used for round-up calculation. For example, let's say the service being provided is data storage, and the price is $10 per 5GB per month. In this case Unit Price is $10, UOM is GB, and denominator is 5. When priced this way, consumption is rounded-up at increment of 5GB. For instance, 6GB costs $20, as opposed to $12 if the rate is defined quasi-equivalently as $2 per GB per month.
 
 Changing *Unit Price* or *Denominator* only affects future charge calculations. Deleting a rate entry is disallowed unless all consumption items associated with the rate are deleted.
 
@@ -80,7 +88,7 @@ Changing *Unit Price* or *Denominator* only affects future charge calculations. 
   * Service End - optional end date of the service
   * Fixed Consumption Ref - if the consumption item is auto-populated from *Fixed Consumptions* by *Invoice Run.exe*, this hidden field contains a reference to the corrseponding fixed consumption item.
 
-Consumption items are modifiable by users with *Contribute* permission prior to the closing date of billing cycle and read-only thereafter. Deleting a consumption item of a closed billing cycle is disallowed unless the corresponding charge item is deleted.
+Consumption items are modifiable by users with *Contribute* permission of the list prior to the closing date of billing cycle and read-only thereafter. Consumption items are also modifiable by administrators any time. Deleting a consumption item of a closed billing cycle is disallowed unless the corresponding charge item is deleted.
  
 #### Charges
 Items in *Charges* list are created by *Invoice Run.exe*. There is a one-to-one mapping between *Consumptions* and *Charges*. *Charges* contain following columns:
@@ -96,10 +104,10 @@ Items in *Charges* list are created by *Invoice Run.exe*. There is a one-to-one 
 
 Notice that except for the hidden *Consumption Ref* column, all columns are copied from, rather than referencing to other lists. This *de-normalization* process prevents historical billing records from altering by factors such as account re-naming or price adjustment, resulting in improved accountability.
 
-By the same record-preserving principle, charge line items should be made read-only, except for site-collection administrators who have full access regardless of permissions. When a charge item is created, the permission of the item is broken from inheritance. Users who have read permissions defined in the *Charges* list at the time of broken can still read the item. In addition, users who belong to the *"&lt;prefix&gt;&lt;account&gt;"* group are also granted read-only access. This makes the list security-trimmed and suitable to be exposed as a portal page to clients who can only see the charges applied to their account.
+By the same record-preserving principle, charge line items should be made read-only, except for site collection administrators who have full access regardless of permissions. When a charge item is created, the permission of the item is broken from inheritance. Users who have read permissions defined in the *Charges* list at the time of broken can still read the item. In addition, users who belong to the *"&lt;prefix&gt;&lt;account&gt;"* group are also granted read-only access. This makes the list security-trimmed and suitable to be exposed as a portal page to clients who can only see the charges applied to their account.
 
 #### Fixed Consumptions
-*Fixed Consumptions* list is used to define consumptions of pre-determined quantities. When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  [<*Service Start*>, <*Service End*>) overlapping the billing period by copying columns exist in both lists. The *Consumptions* list must also contain following additional columns that *Invoice Run.exe* will populate:
+*Fixed Consumptions* list is used to define consumptions of pre-determined quantities. When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  [<*Service Start*>, <*Service End*>) overlapping the billing period by copying columns exist in both lists. *Invoice Run.exe* will also populate following *Consumptions* list columns that *Fixed Consumptions* shouldn't contain:
 
 * *Cycle* is set to billing cycle start date. 
 * *Fixed Consumption Ref* is set to a reference to the fixed consumption item. *Invoice Run.exe* relies on this column to avoid generating multiple consumption items in the same billing cycle in case *Invoice Run.exe* has to be executed repetitively.
@@ -118,7 +126,7 @@ The gem of *BillEase* is the console application *Invoice Run.exe*. It provides 
 *Invoice Run.exe* expects following call syntax:
 ```
 "Invoice Run.exe" [options] <URL>
-where <URL> points to the site holding the four lists and [options] are
+where <URL> points to the site holding the five lists and [options] are
 -p|--prefix_of_group=<string>
 	Prefix of the account groups. The prefix is useful to 
     prevent group name conflicts with other groups defined in same site collection
@@ -172,7 +180,7 @@ Examples:
   list over to charges list.
 ```
 ## System Requirements and Access Privileges
-* Site collection administrator level of access to any edition of SharePoint 2010 or 2013.
+* Site collection administrator level of access to any edition of SharePoint 2010 or 2013 with integrated Windows authentication.
 * Local administrator access to a server with .Net Framework 4 installed to run scheduled tasks. The server doesn't need to be the host of the SharePoint site. Windows Server 2008 R2 has been tested working.
 * Optionally Git client to download package
 * Optionally Visual Studio 2017 if you want to compile or change source code of  *Invoice Run.exe*

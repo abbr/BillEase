@@ -34,7 +34,7 @@ In a large organization, a support division often provides ongoing services to o
   * *Rates* - defines services and corresponding rates
   * *Consumptions* - is used to upload meter readings
   * *Charges* - auto-populated line items with amount computed from rates and consumption. 
-  * *Fixed Consumptions* - contains pre-defined fixed-quantity consumptions to be posted to *Consumptions* List periodically
+  * *Fixed Consumptions* - contains pre-defined fixed-quantity consumptions to be posted to *Consumptions* list periodically
 
 *Invoice Run.exe* is intended to be put into a scheduled task to run at the end of each billing cycle to create charge line items.
 
@@ -108,7 +108,7 @@ Notice that except for the hidden *Consumption Ref* column, all columns are copi
 By the same record-preserving principle, charge line items should be made read-only, except for site collection administrators who have full access regardless of permissions. When a charge item is created, the permission of the item is broken from inheritance. Users who have read permissions defined in the *Charges* list at the time of broken can still read the item. In addition, users who belong to the *"&lt;prefix&gt;&lt;account&gt;"* group are also granted read-only access. This makes the list security-trimmed and suitable to be exposed as a portal page to clients who can only see the charges applied to their account.
 
 #### Fixed Consumptions
-*Fixed Consumptions* list is a worksheet used to define consumptions of pre-determined quantities in a "set it and forget it" manner. When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  \[<*Service Start*>, <*Service End*>) overlapping the billing period by copying columns exist in both lists. *Invoice Run.exe* will also populate following *Consumptions* list columns that *Fixed Consumptions* shouldn't contain:
+*Fixed Consumptions* list is a worksheet used to define consumptions of pre-determined quantities in a set-it-and-forget-it manner. The columns in this list generally match *Consumptions* list. When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  \[<*Service Start*>, <*Service End*>) overlapping the billing period by copying columns exist in both lists. *Invoice Run.exe* will also populate following *Consumptions* list columns that *Fixed Consumptions* shouldn't contain:
 
 * *Cycle* is set to billing cycle start date. 
 * *Fixed Consumption Ref* is set to a reference to the fixed consumption item. *Invoice Run.exe* relies on this column to avoid generating multiple consumption items in the same billing cycle in case *Invoice Run.exe* has to be executed repetitively.

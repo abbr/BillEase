@@ -338,7 +338,22 @@ namespace Invoice_Run
               && rateItem["Unit_x0020_Price"] != null
               && rateItem["Denominator"] != null
               && (double)rateItem["Denominator"] > 0)
-            newChgItem["Amount"] = (double)rateItem["Unit_x0020_Price"] * Math.Ceiling((double)consumptionLI["Quantity"] / (double)rateItem["Denominator"]);
+          {
+            var normalizedQty = (double)consumptionLI["Quantity"] / (double)rateItem["Denominator"];
+            try
+            {
+
+              if (consumptionLI["Round_x0020_Up"] != null && consumptionLI["Round_x0020_Up"] as Nullable<bool> == true)
+              {
+                normalizedQty = Math.Ceiling((double)consumptionLI["Quantity"] / (double)rateItem["Denominator"]);
+              }
+            }
+            catch
+            {
+              EventLog.WriteEntry(evtLogSrc, string.Format("Error getting Round Up field for consumption with ID={0}", consumptionLI["ID"]), EventLogEntryType.Error);
+            }
+            newChgItem["Amount"] = (double)rateItem["Unit_x0020_Price"] * normalizedQty;
+          }
           if (newChgItem.FieldValues.ContainsKey("Amount"))
           {
             newChgItem.Update();

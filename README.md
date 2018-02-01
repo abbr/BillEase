@@ -16,6 +16,7 @@ In a large organization, a support division often provides ongoing services to o
 ## Features
 
   * Support both recurring and one-time fixed rate charges and credits
+  * Support proration of quantity for fixed quantity recurring charges in the billing cycles covering the begining or end of service period.
   * Allow overriding calculated line item amount
   * Prevent altering charge and consumption records of closed billing cycles
   * Features inherited from SharePoint
@@ -107,12 +108,14 @@ Notice that except for the hidden *Consumption Ref* column, all columns are copi
 By the same record-preserving principle, charge line items should be made read-only, except for site collection administrators who have full access regardless of permissions. When a charge item is created, the permission of the item is broken from inheritance. Users who have read permissions defined in the *Charges* list at the time of broken can still read the item. In addition, users who belong to the *"&lt;prefix&gt;&lt;account&gt;"* group are also granted read-only access. This makes the list security-trimmed and suitable to be exposed as a portal page to clients who can only see the charges applied to their account.
 
 #### Fixed Consumptions
-*Fixed Consumptions* list is used to define consumptions of pre-determined quantities. When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  [<*Service Start*>, <*Service End*>) overlapping the billing period by copying columns exist in both lists. *Invoice Run.exe* will also populate following *Consumptions* list columns that *Fixed Consumptions* shouldn't contain:
+*Fixed Consumptions* list is a worksheet used to define consumptions of pre-determined quantities in a "set it and forget it" manner. When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  \[<*Service Start*>, <*Service End*>) overlapping the billing period by copying columns exist in both lists. *Invoice Run.exe* will also populate following *Consumptions* list columns that *Fixed Consumptions* shouldn't contain:
 
 * *Cycle* is set to billing cycle start date. 
 * *Fixed Consumption Ref* is set to a reference to the fixed consumption item. *Invoice Run.exe* relies on this column to avoid generating multiple consumption items in the same billing cycle in case *Invoice Run.exe* has to be executed repetitively.
 
-Note *Service Start* is inclusive and *Service End* is exclusive. Missing *Service Start* implies a distant past; missing *Service End* implies a distant future. Proration is not supported. You can implement proration by adding an one-off credit line item manually.
+Note *Service Start* is inclusive and *Service End* is exclusive. Missing *Service Start* implies a distant past; missing *Service End* implies a distant future. 
+
+Item level proration is supported through the *Prorated* list column. If this field is set to yes, then the Quantity and Amount fields are prorated in the billing cycles that cover the service start or end date. For example, if the service start date is 2018-02-01 and service end date is empty. Assuming billing period is quarterly starting January 1 annually, then for the billing cycle 2018-01-01 - 2018-03-31, Quantity and Amount fields are adjusted by a proration factor of 59/90=0.66.
 
 ### Console Application
 The gem of *BillEase* is the console application *Invoice Run.exe*. It provides automation and turns the five SharePoint lists into a workable solution. Without it the SharePoint lists are merely data repository. *Invoice Run.exe* is intended to be launched by a scheduled task at the close of each billing cycle (by default first day of each month). For testing purpose it can also be launched manually and repetitively. When invoked, *Invoice Run.exe* performs following tasks:

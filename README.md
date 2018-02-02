@@ -69,16 +69,16 @@ Once above activities are performed, rest processes are handled automatically by
 Deleting an account is disallowed unless all consumption items associated with the account are deleted.
 
 #### Rates
-*Rates* define billable line item types and corresponding rates. It has following columns:
+*Rates* define billable line item types and corresponding rates. It has following columns at minimum:
   * Title - name of the billable line item type. This could be the service name if the line item type is service specific.
   * Unit Price
   * UOM - unit of measure
-  * Denominator - a number combined with UOM to form the denominator of the rate. Denominator is used for round-up calculation when enabled at consumption line item level. For example, let's say the service being provided is data storage, and the price is $10 per 5GB per month. In this case Unit Price is $10, UOM is GB, and denominator is 5. When priced this way, consumption is rounded-up at increment of 5GB. For instance, 6GB costs $20, as opposed to $12 if the rate is defined quasi-equivalently as $2 per GB per month.
+  * Denominator - a number combined with UOM to form the denominator of the rate. Denominator is used for round-up calculation when enabled at consumption line item level. For example, let's say the service being provided is data storage, and the price is $10 per 5GB per month. In this case Unit Price is $10, UOM is GB, and denominator is 5. When priced this way, consumption is rounded-up at increment of 5GB. For instance, 6GB costs $20, as opposed to $12 had the round up been disabled.
 
 Changing *Unit Price* or *Denominator* only affects future charge calculations. Deleting a rate entry is disallowed unless all consumption items associated with the rate are deleted.
 
 #### Consumptions
-*Consumptions* list is used to upload meter readings. It has following columns:
+*Consumptions* list is used to upload meter readings. It has following columns at minimum:
   * Title - consumption title. This becomes the charge line item description.
   * Account - a reference to the account
   * Rate - a reference to the rate
@@ -87,13 +87,13 @@ Changing *Unit Price* or *Denominator* only affects future charge calculations. 
   * Amount - used to override calculated amount. This column is useful to post one-off type of charges or credits. When this column is populated, *Quantity* doesn't need to be populated. Even if *Quantity* is populated, the quantity will not be used.
   * Service Start - optional start date of the service
   * Service End - optional end date of the service
-  * Round Up - Whether or not rounding up quantity when calculating amount in charges. Default to yes.
+  * Round Up - Whether or not round up quantity when calculating amount in charges. Default to yes.
   * Fixed Consumption Ref - if the consumption item is auto-populated from *Fixed Consumptions* by *Invoice Run.exe*, this hidden field contains a reference to the corrseponding fixed consumption item.
 
 Consumption items are modifiable by users with *Contribute* permission of the list prior to the closing date of billing cycle and read-only thereafter. Consumption items are also modifiable by administrators any time. Deleting a consumption item of a closed billing cycle is disallowed unless the corresponding charge item is deleted.
  
 #### Charges
-Items in *Charges* list are created by *Invoice Run.exe*. There is a one-to-one mapping between *Consumptions* and *Charges*. *Charges* contain following columns:
+Items in *Charges* list are created by *Invoice Run.exe*. There is a one-to-one mapping between *Consumptions* and *Charges*. *Charges* contain following columns at minimum:
   * Title - copied from  *Consumptions*
   * Account - copied from *Consumptions*
   * Cycle - copied from *Consumptions*
@@ -109,14 +109,14 @@ Notice that except for the hidden *Consumption Ref* column, all columns are copi
 By the same record-preserving principle, charge line items should be made read-only, except for site collection administrators who have full access regardless of permissions. When a charge item is created, the permission of the item is broken from inheritance. Users who have read permissions defined in the *Charges* list at the time of broken can still read the item. In addition, users who belong to the *"&lt;prefix&gt;&lt;account&gt;"* group are also granted read-only access. This makes the list security-trimmed and suitable to be exposed as a portal page to clients who can only see the charges applied to their account.
 
 #### Fixed Consumptions
-*Fixed Consumptions* list is a worksheet used to define consumptions of pre-determined quantities in a set-it-and-forget-it manner. The columns in this list generally match *Consumptions* list. When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  \[<*Service Start*>, <*Service End*>) overlapping the billing period by copying columns exist in both lists. *Invoice Run.exe* will also populate following *Consumptions* list columns that *Fixed Consumptions* shouldn't contain:
+*Fixed Consumptions* list is a worksheet used to define consumptions of pre-determined quantities in a set-it-and-forget-it manner. The columns in this list generally match *Consumptions* list. When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  \[<*Service Start*>, <*Service End*>) overlapping the billing cycle by copying columns exist in both lists. *Invoice Run.exe* will also populate following *Consumptions* list columns that *Fixed Consumptions* shouldn't contain:
 
 * *Cycle* is set to billing cycle start date. 
 * *Fixed Consumption Ref* is set to a reference to the fixed consumption item. *Invoice Run.exe* relies on this column to avoid generating multiple consumption items in the same billing cycle in case *Invoice Run.exe* has to be executed repetitively.
 
 Note *Service Start* is inclusive and *Service End* is exclusive. Missing *Service Start* implies a distant past; missing *Service End* implies a distant future. 
 
-Item level proration is supported through the *Prorated* list column. If this field is set to yes, then the Quantity and Amount fields are prorated in the billing cycles that cover the service start or end date. For example, if the service start date is 2018-02-01 and service end date is empty, assuming billing period is quarterly starting January 1 annually, then for the billing cycle 2018-01-01 - 2018-03-31, Quantity and Amount fields are adjusted by a proration factor of 59/90=0.66 when posting to the *Consumptions* list.
+Item level proration is supported through the *Prorated* list column. If this field is set to yes, then the Quantity and Amount fields are prorated in the billing cycles that cover the service start or end date. For example, if the service start date is 2018-02-01 and service end date is empty, assuming billing period is quarterly starting January 1 annually, then for the billing cycle 2018-01-01 to 2018-03-31, Quantity and Amount fields are adjusted by a proration factor of 59/90=0.66 when posting to the *Consumptions* list.
 
 ### Console Application
 The gem of *BillEase* is the console application *Invoice Run.exe*. It provides automation and turns the five SharePoint lists into a workable solution. Without it the SharePoint lists are merely data repository. *Invoice Run.exe* is intended to be launched by a scheduled task at the close of each billing cycle (by default first day of each month). For testing purpose it can also be launched manually and repetitively. When invoked, *Invoice Run.exe* performs following tasks:

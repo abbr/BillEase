@@ -166,7 +166,9 @@ namespace Invoice_Run
             // calculate proration
             try
             {
-              if (fixedConsumptionLI["Prorated"] as Nullable<bool> == true)
+              if (fixedConsumptionLI["Prorated"] != null &&
+                fixedConsumptionLI["Prorated"].ToString().Contains("Yes")
+                )
               {
                 DateTime serviceStart = DateTime.MinValue;
                 DateTime serviceEnd = DateTime.MaxValue;
@@ -183,7 +185,12 @@ namespace Invoice_Run
                 double portion = overlap.Duration.TotalDays / billingRange.Duration.TotalDays;
                 if (fixedConsumptionLI["Quantity"] != null)
                 {
-                  newConsumptionItem["Quantity"] = ((double)fixedConsumptionLI["Quantity"]) * portion;
+                  var proratedQty = ((double)fixedConsumptionLI["Quantity"]) * portion;
+                  if (fixedConsumptionLI["Prorated"].ToString() != "Yes")
+                  {
+                    proratedQty = Convert.ToInt32(proratedQty);
+                  }
+                  newConsumptionItem["Quantity"] = proratedQty;
                 }
                 if (fixedConsumptionLI["Amount"] != null)
                 {

@@ -350,14 +350,14 @@ namespace Invoice_Run
             try
             {
 
-              if (consumptionLI["Round_x0020_Up"] != null && consumptionLI["Round_x0020_Up"] as Nullable<bool> == true)
+              if (rateItem["Round_x0020_Up"] != null && rateItem["Round_x0020_Up"] as Nullable<bool> == true)
               {
                 normalizedQty = Math.Ceiling((double)consumptionLI["Quantity"] / (double)rateItem["Denominator"]);
               }
             }
             catch
             {
-              EventLog.WriteEntry(evtLogSrc, string.Format("Error getting Round Up field for consumption with ID={0}", consumptionLI["ID"]), EventLogEntryType.Error);
+              EventLog.WriteEntry(evtLogSrc, string.Format("Error calculate round up for rate ID={0}, consumption ID={1}", rateItem["ID"], consumptionLI["ID"]), EventLogEntryType.Error);
             }
             newChgItem["Amount"] = (double)rateItem["Unit_x0020_Price"] * normalizedQty;
           }

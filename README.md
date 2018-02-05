@@ -73,7 +73,8 @@ Deleting an account is disallowed unless all consumption items associated with t
   * Title - name of the billable line item type. This could be the service name if the line item type is service specific.
   * Unit Price
   * UOM - unit of measure
-  * Denominator - a number combined with UOM to form the denominator of the rate. Denominator is used for round-up calculation when enabled at consumption line item level. For example, let's say the service being provided is data storage, and the price is $10 per 5GB per month. In this case Unit Price is $10, UOM is GB, and denominator is 5. When priced this way, consumption is rounded-up at increment of 5GB. For instance, 6GB costs $20, as opposed to $12 had the round up been disabled.
+  * Denominator - a number combined with UOM to form the denominator of the rate. Denominator is used for round-up calculation if enabled by *Round Up* column described next. For example, let's say the service being provided is data storage, and the price is $10 per 5GB per month. In this case Unit Price is $10, UOM is GB, and denominator is 5. When priced this way, consumption is rounded-up at increment of 5GB. For instance, 6GB costs $20, as opposed to $12 had the round up been disabled.
+  * Round Up - Whether or not round up consumed quantity to next increment of denominator when calculating amount in charges. Default to yes.
 
 Changing *Unit Price* or *Denominator* only affects future charge calculations. Deleting a rate entry is disallowed unless all consumption items associated with the rate are deleted.
 
@@ -87,7 +88,6 @@ Changing *Unit Price* or *Denominator* only affects future charge calculations. 
   * Amount - used to override calculated amount. This column is useful to post one-off type of charges or credits. When this column is populated, *Quantity* doesn't need to be populated. Even if *Quantity* is populated, the quantity will not be used.
   * Service Start - optional start date of the service
   * Service End - optional end date of the service
-  * Round Up - Whether or not round up quantity when calculating amount in charges. Default to yes.
   * Fixed Consumption Ref - if the consumption item is auto-populated from *Fixed Consumptions* by *Invoice Run.exe*, this hidden field contains a reference to the corrseponding fixed consumption item.
 
 Consumption items are modifiable by users with *Contribute* permission of the list prior to the closing date of billing cycle and read-only thereafter. Consumption items are also modifiable by administrators any time. Deleting a consumption item of a closed billing cycle is disallowed unless the corresponding charge item is deleted.

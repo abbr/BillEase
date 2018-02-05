@@ -305,8 +305,10 @@ namespace Invoice_Run
           lookup.LookupId = (int)consumptionLI["ID"];
           newChgItem["Consumption_x0020_Ref"] = lookup;
 
-          foreach (KeyValuePair<string, List<string>> listColumnToCopy in listColumnsToCopy)
+          // the order of list enumeration is important
+          foreach (var lstNm in new string[] { "Account", "Rate", "Consumption" })
           {
+            KeyValuePair<string, List<string>> listColumnToCopy = new KeyValuePair<string, List<string>>(lstNm, listColumnsToCopy[lstNm]);
             if (listColumnToCopy.Value.Count <= 0)
             {
               continue;
@@ -314,11 +316,11 @@ namespace Invoice_Run
             ListItem item = null;
             switch (listColumnToCopy.Key)
             {
-              case "Rate":
-                item = rateItem;
-                break;
               case "Account":
                 item = orgItem;
+                break;
+              case "Rate":
+                item = rateItem;
                 break;
               case "Consumption":
                 item = consumptionLI;
@@ -328,11 +330,14 @@ namespace Invoice_Run
             {
               try
               {
-                newChgItem[columnNm] = item[columnNm];
+                if (item[columnNm] != null)
+                {
+                  newChgItem[columnNm] = item[columnNm];
+                }
               }
               catch
               {
-                EventLog.WriteEntry(evtLogSrc, string.Format(@"Cannot copy column {0} in list {1}", columnNm, listColumnToCopy.Key), EventLogEntryType.Error);
+                EventLog.WriteEntry(evtLogSrc, string.Format(@"Cannot copy column {0} in list {1} for consumption ID={2}", columnNm, listColumnToCopy.Key, consumptionLI["ID"]), EventLogEntryType.Error);
               }
             }
 

@@ -155,18 +155,21 @@ where <URL> points to the site holding the five lists and [options] are
 -n|--account_columns_to_copy=<string>
 	Name of custom column in accounts list to copy over to charges list. 
 	Multiple columns can be defined by adding this option multiple times. The column
-	must have been defined in both accounts and charges lists indentically in 
-	terms of type and name.
+	must have been defined in both accounts and charges lists identically in 
+	terms of type and name. If a column is also copied from rate or consumption list, 
+	the precedence of overriding in descending order is: consumption, rate, account.
 -t|--rate_columns_to_copy=<string>
 	Name of custom column in rates list to copy over to charges list. 
 	Multiple columns can be defined by adding this option multiple times. The column
-	must have been defined in both rates and charges lists indentically in 
-	terms of type and name.
+	must have been defined in both rates and charges lists identically in 
+	terms of type and name. If a column is also copied from account or consumption list, 
+	the precedence of overriding in descending order is: consumption, rate, account.
 -s|--consumption_columns_to_copy=<string>
     Name of custom column in consumptions list to copy over to charges list. 
 	Multiple columns can be defined by adding this option multiple times. The column
-	must have been defined in both consumptions and charges lists indentically in 
-	terms of type and name.
+	must have been defined in both consumptions and charges lists identically in 
+	terms of type and name. If a column is also copied from account or rate list, 
+	the precedence of overriding in descending order is: consumption, rate, account.
 
 
 Examples:

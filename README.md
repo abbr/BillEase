@@ -86,8 +86,6 @@ Changing *Unit Price* or *Denominator* only affects future charge calculations. 
   * Quantity - consumption data. UOM should match that of rate referenced
   * Cycle - the  start of billing cycle. The first day of current month is populated by default.
   * Amount - used to override calculated amount. This column is useful to post one-off type of charges or credits. When this column is populated, *Quantity* doesn't need to be populated. Even if *Quantity* is populated, the quantity will not be used.
-  * Service Start - optional start date of the service
-  * Service End - optional end date of the service
   * Fixed Consumption Ref - if the consumption item is auto-populated from *Fixed Consumptions* by *Invoice Run.exe*, this hidden field contains a reference to the corrseponding fixed consumption item.
 
 Consumption items are modifiable by users with *Contribute* permission of the list prior to the closing date of billing cycle and read-only thereafter. Consumption items are also modifiable by administrators any time. Deleting a consumption item of a closed billing cycle is disallowed unless the corresponding charge item is deleted.
@@ -109,7 +107,17 @@ Notice that except for the hidden *Consumption Ref* column, all columns are copi
 By the same record-preserving principle, charge line items should be made read-only, except for site collection administrators who have full access regardless of permissions. When a charge item is created, the permission of the item is broken from inheritance. Users who have read permissions defined in the *Charges* list at the time of broken can still read the item. In addition, users who belong to the *"&lt;prefix&gt;&lt;account&gt;"* group are also granted read-only access. This makes the list security-trimmed and suitable to be exposed as a portal page to clients who can only see the charges applied to their account.
 
 #### Fixed Consumptions
-*Fixed Consumptions* list is a worksheet used to define consumptions of pre-determined quantities in a set-it-and-forget-it manner. The columns in this list generally match *Consumptions* list. When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  \[<*Service Start*>, <*Service End*>) overlapping the billing cycle by copying columns exist in both lists. *Invoice Run.exe* will also populate following *Consumptions* list columns that *Fixed Consumptions* shouldn't contain:
+*Fixed Consumptions* list is a worksheet used to define consumptions of pre-determined quantities in a set-it-and-forget-it manner. The columns in this list generally match *Consumptions* list except for following extra columns
+* Service Start - optional start date of the service
+* Service End - optional end date of the service
+* Prorated - whether or not to prorate Quantity and Amount during the billing cycles that cover the start or end of service period. Allowed values are
+  * No
+  * Yes
+  * Yes and round quantity to integer
+  
+  Default to *No*.
+
+When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  \[<*Service Start*>, <*Service End*>) overlapping the billing cycle by copying columns exist in both lists. *Invoice Run.exe* will also populate following *Consumptions* list columns that *Fixed Consumptions* shouldn't contain:
 
 * *Cycle* is set to billing cycle start date. 
 * *Fixed Consumption Ref* is set to a reference to the fixed consumption item. *Invoice Run.exe* relies on this column to avoid generating multiple consumption items in the same billing cycle in case *Invoice Run.exe* has to be executed repetitively.

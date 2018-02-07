@@ -62,7 +62,7 @@ Once above activities are performed, rest processes are handled automatically by
 ## Components
 
 ### SharePoint Custom Lists
-*BillEase* depends on list and column names described below to function. Extending a list is allowed as long as these column names are not deleted. Renaming these column names are allowed. To rename a list, make sure to supply the new name to *Invoice Run.exe* documented in section [Console Application](#console-application) below.
+*BillEase* depends on list and column names described below to function. Extending a list is allowed as long as these columns are not deleted. Renaming these columns are allowed, however. To rename a list, make sure to supply the new name to *Invoice Run.exe* documented in section [Console Application](#console-application) below.
 
 #### Accounts
 *Accounts* contain client information. Only *Title* column is mandatory. Changing the name of an account is allowed. However, the value of *Account* column in *Charges* list is copied from, not referencing to, the *Title* column of *Accounts* list, so the account name change will not propagate to *Charges* list.
@@ -73,7 +73,7 @@ Deleting an account is disallowed unless all consumption items associated with t
   * Title - name of the billable line item type. This could be the service name if the line item type is service specific.
   * Unit Price
   * UOM - unit of measure
-  * Denominator - a number combined with UOM to form the denominator of the rate. Denominator is used for round-up calculation if enabled by *Round Up* column described next. For example, let's say the service being provided is data storage, and the price is $10 per 5GB per month. In this case Unit Price is $10, UOM is GB, and denominator is 5. When priced this way, consumption is rounded-up at increment of 5GB. For instance, 6GB costs $20, as opposed to $12 had the round up been disabled.
+  * Denominator - a number combined with UOM to form the denominator of the rate. Denominator is used for round-up calculation if enabled by *Round Up* column described next. For example, let's say the service being provided is data storage, and the price is $10 per 5GB per billing cycle. In this case Unit Price is $10, UOM is GB, and denominator is 5. When priced this way, consumption is rounded-up at increment of 5GB. For instance, 6GB costs $20, as opposed to $12 had the round up been disabled.
   * Round Up - Whether or not round up consumed quantity to next increment of denominator when calculating amount in charges. Default to yes.
 
 Changing *Unit Price* or *Denominator* only affects future charge calculations. Deleting a rate entry is disallowed unless all consumption items associated with the rate are deleted.

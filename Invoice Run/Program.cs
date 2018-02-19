@@ -35,10 +35,10 @@ namespace Invoice_Run
         string chargesLstNm = "Charges";
         string billingPeriodStr = "1m";
 
-        Dictionary<string, List<string>> listColumnsToCopy = new Dictionary<string, List<string>>();
-        listColumnsToCopy.Add("Account", new List<string>());
-        listColumnsToCopy.Add("Rate", new List<string>());
-        listColumnsToCopy.Add("Consumption", new List<string>());
+        Dictionary<string, List<KeyValuePair<string, string>>> listColumnsToCopy = new Dictionary<string, List<KeyValuePair<string, string>>>();
+        listColumnsToCopy.Add("Account", new List<KeyValuePair<string, string>>());
+        listColumnsToCopy.Add("Rate", new List<KeyValuePair<string, string>>());
+        listColumnsToCopy.Add("Consumption", new List<KeyValuePair<string, string>>());
         var options = new OptionSet(){
                     {"p|prefix_of_group=", v => groupPrefix = v}
                     ,{"o|offset_of_cycle_month=", v => cycleMonthOffset = int.Parse(v)}
@@ -48,9 +48,35 @@ namespace Invoice_Run
                     ,{"f|fixed_consumptions_list_name=", v => fixedConsumptionsLstNm = v}
                     ,{"c|consumptions_list_name=", v => consumptionsLstNm = v}
                     ,{"h|charges_list_name=", v => chargesLstNm = v}
-                    ,{"n|account_columns_to_copy=", v => listColumnsToCopy["Account"].Add(v)}
-                    ,{"t|rate_columns_to_copy=", v => listColumnsToCopy["Rate"].Add(v)}
-                    ,{"s|consumption_columns_to_copy=", v => listColumnsToCopy["Consumption"].Add(v)}
+                    ,{"n|account_columns_to_copy=", v => {
+                      var src = v;
+                      var dst = v;
+                      if(v.Contains(":")){
+                        src = v.Substring(0,v.IndexOf(":"));
+                        dst = v.Substring(v.IndexOf(":")+1);
+                      }
+                      listColumnsToCopy["Account"].Add(new KeyValuePair<string, string>(src,dst));
+                      }
+                    }
+                    ,{"t|rate_columns_to_copy=", v => {
+                      var src = v;
+                      var dst = v;
+                      if(v.Contains(":")){
+                        src = v.Substring(0,v.IndexOf(":"));
+                        dst = v.Substring(v.IndexOf(":")+1);
+                      }
+                      listColumnsToCopy["Rate"].Add(new KeyValuePair<string, string>(src,dst));}
+                    }
+                    ,{"s|consumption_columns_to_copy=", v => {
+                                           var src = v;
+                      var dst = v;
+                      if(v.Contains(":")){
+                        src = v.Substring(0,v.IndexOf(":"));
+                        dst = v.Substring(v.IndexOf(":")+1);
+                      }
+                      listColumnsToCopy["Consumption"].Add(new KeyValuePair<string, string>(src,dst));
+                      }
+                    }
                 };
         List<String> extraArgs = options.Parse(args);
         ServicePointManager.ServerCertificateValidationCallback = MyCertHandler;
@@ -308,7 +334,7 @@ namespace Invoice_Run
           // the order of list enumeration is important
           foreach (var lstNm in new string[] { "Account", "Rate", "Consumption" })
           {
-            KeyValuePair<string, List<string>> listColumnToCopy = new KeyValuePair<string, List<string>>(lstNm, listColumnsToCopy[lstNm]);
+            KeyValuePair<string, List<KeyValuePair<string, string>>> listColumnToCopy = new KeyValuePair<string, List<KeyValuePair<string, string>>>(lstNm, listColumnsToCopy[lstNm]);
             if (listColumnToCopy.Value.Count <= 0)
             {
               continue;
@@ -326,18 +352,18 @@ namespace Invoice_Run
                 item = consumptionLI;
                 break;
             }
-            foreach (var columnNm in listColumnToCopy.Value)
+            foreach (var columnNVP in listColumnToCopy.Value)
             {
               try
               {
-                if (item[columnNm] != null)
+                if (item[columnNVP.Key] != null)
                 {
-                  newChgItem[columnNm] = item[columnNm];
+                  newChgItem[columnNVP.Value] = item[columnNVP.Key];
                 }
               }
               catch
               {
-                EventLog.WriteEntry(evtLogSrc, string.Format(@"Cannot copy column {0} in list {1} for consumption ID={2}", columnNm, listColumnToCopy.Key, consumptionLI["ID"]), EventLogEntryType.Error);
+                EventLog.WriteEntry(evtLogSrc, string.Format(@"Cannot copy column {0} in list {1} for consumption ID={2}", columnNVP.Key, listColumnToCopy.Key, consumptionLI["ID"]), EventLogEntryType.Error);
               }
             }
 

@@ -65,7 +65,7 @@ Once above activities are performed, rest processes are handled automatically by
 *BillEase* depends on list and column names described below to function. Extending a list is allowed as long as these columns are not deleted. Renaming these columns are allowed, however. To rename a list, make sure to supply the new name to *Invoice Run.exe* documented in section [Console Application](#console-application) below.
 
 #### Accounts
-*Accounts* contain client information. Only *Title* column is mandatory. Changing the name of an account is allowed. However, the value of *Account* column in *Charges* list is copied from, not referencing to, the *Title* column of *Accounts* list, so the account name change will not propagate to *Charges* list.
+*Accounts* contain client information. Only *Title* column is mandatory. Changing the name of an account is allowed. However, the value of *Account* column in *Charges* list described below is copied from, not referencing to, the *Title* column of *Accounts* list, so the account name change will not propagate to *Charges* list.
 Deleting an account is disallowed unless all consumption items associated with the account are deleted.
 
 #### Rates
@@ -149,7 +149,8 @@ where <URL> points to the site holding the five lists and [options] are
 	of -1 is needed for calculation be performed on last month's data.
 -b|--billing_period=<string>
 	Billing period in the form <Integer><UOM>. Default to 1m. Allowed UOMs are 
-	<d|m|y> for day, month and year respectively. For example, 1m for 1 month; 14d for 2 weeks; 3m for a quarter.
+	<d|m|y> for day, month and year respectively. For example, 1m for 1 month; 
+	14d for 2 weeks; 3m for a quarter.
 -a|--accounts_list_name=<string>
 	Name of accounts list if renamed.
 -r|--rates_list_name=<string>
@@ -161,23 +162,30 @@ where <URL> points to the site holding the five lists and [options] are
 -h|--charges_list_name=<string>
 	Name of charges list if renamed.
 -n|--account_columns_to_copy=<string>
-	Name of custom column in accounts list to copy over to charges list. 
-	Multiple columns can be defined by adding this option multiple times. The column
-	must have been defined in both accounts and charges lists identically in 
-	terms of type and name. If a column is also copied from rate or consumption list, 
-	the precedence of overriding in descending order is: consumption, rate, account.
+	Name of custom column in accounts list to copy over to charges list in the format 
+	<source_name>[:<target_name>]. Target name can be omitted if same as source name.
+	The column name is not display name, but rather internal field name which you can find in the 
+	Field url query parameter when opening the column definition in list settings.
+	Multiple columns can be defined by adding this option multiple times. The column type
+	in both accounts and charges lists must match. If a column is also copied from rate or
+	consumption list, the precedence of overriding in descending order is: consumption, rate, 
+	account.
 -t|--rate_columns_to_copy=<string>
-	Name of custom column in rates list to copy over to charges list. 
-	Multiple columns can be defined by adding this option multiple times. The column
-	must have been defined in both rates and charges lists identically in 
-	terms of type and name. If a column is also copied from account or consumption list, 
-	the precedence of overriding in descending order is: consumption, rate, account.
+	Name of custom column in rates list to copy over to charges list in the format <source_name>
+	[:<target_name>]. Target name can be omitted if same as source name. 
+	The column name is not display name, but rather internal field name which you can find in the 
+	Field url query parameter when opening the column definition in list settings.
+	Multiple columns can be	defined by adding this option multiple times. The column type	in both
+	rates and charges lists	must match. If a column is also copied from account or consumption list, 
+	the precedence of overriding in descending order is: consumption, rate,	account.
 -s|--consumption_columns_to_copy=<string>
-    Name of custom column in consumptions list to copy over to charges list. 
-	Multiple columns can be defined by adding this option multiple times. The column
-	must have been defined in both consumptions and charges lists identically in 
-	terms of type and name. If a column is also copied from account or rate list, 
-	the precedence of overriding in descending order is: consumption, rate, account.
+	Name of custom column in consumptions list to copy over to charges list in the format 
+	<source_name>[:<target_name>]. Target name can be omitted if same as source name. 
+	The column name is not display name, but rather internal field name which you can find in the 
+	Field url query parameter when opening the column definition in list settings.
+	Multiple columns can be defined by adding this option multiple times. The column type
+	in both consumptions and charges lists must match. If a column is also copied from account or
+	rate list, the precedence of overriding in descending order is: consumption, rate, account.
 
 
 Examples:
@@ -190,9 +198,9 @@ Examples:
   Set the offset of billing cycle month adjustment to 0. This is needed if billing 
   cycle starts on the first day of each month and Invoice Run is launched at
   11:50PM on the last day of each month, for example.
-"Invoice Run.exe" -c Comments -c Service_x0020_Date https://mycorp.com/service/billing
-  When creating charges items, copy Comments and Service_x0020_Date columns in consumptons 
-  list over to charges list.
+"Invoice Run.exe" -c Comments -c ServiceDate:Service_x0020_Date https://mycorp.com/service/billing
+  When creating charges items, copy Comments and ServiceDate columns in consumptons 
+  list over to Comments and Service_x0020_Date columns respectively in charges list.
 ```
 ## System Requirements and Access Privileges
 * Site collection administrator level of access to any edition of SharePoint 2010 or 2013 with integrated Windows authentication.

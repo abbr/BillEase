@@ -117,12 +117,12 @@ By the same record-preserving principle, charge line items should be made read-o
   
   Default to *No*.
 
-When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  \[<*Service Start*>, <*Service End*>) overlapping the billing cycle by copying columns exist in both lists. *Invoice Run.exe* will also populate following *Consumptions* list columns that *Fixed Consumptions* shouldn't contain:
+When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  \[<*Service Start*>, <*Service End*>) overlapping the billing cycle by copying columns exist in both lists. Note *Service Start* is inclusive and *Service End* is exclusive. Missing *Service Start* implies a distant past; missing *Service End* implies a distant future. 
+
+*Invoice Run.exe* will also populate following *Consumptions* list columns that *Fixed Consumptions* shouldn't contain:
 
 * *Cycle* is set to billing cycle start date. 
 * *Fixed Consumption Ref* is set to a reference to the fixed consumption item. *Invoice Run.exe* relies on this column to avoid generating multiple consumption items in the same billing cycle in case *Invoice Run.exe* has to be executed repetitively.
-
-Note *Service Start* is inclusive and *Service End* is exclusive. Missing *Service Start* implies a distant past; missing *Service End* implies a distant future. 
 
 Item level proration is supported through the *Prorated* list column. If this field is set to *Yes* or *Yes and round quantity to integer*, then the Quantity and Amount fields are prorated by day in the billing cycles that cover the service start or end date. For example, if the service start date is 2018-02-01 and service end date is empty, assuming billing period is quarterly starting January 1 annually, then for the billing cycle 2018-01-01 to 2018-03-31, Quantity and Amount fields are adjusted by a proration factor of 59/90≈0.66 when posting to the *Consumptions* list. Furthermore, if the field is set to *Yes and round quantity to integer*, then prorated *Quantity* field is rounded to integer. This allows *Quantity* field to be set correctly to accomodate the fact that months have different number of days. In the above example, if *Quantity* field is 3 (reasonable because rate can be priced as per month and there are 3 months in a quarter), then the rounded prorated quantity will be 2, as opposed to 1.966666666666667 had rounding not been performed.
 

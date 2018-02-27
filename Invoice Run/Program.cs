@@ -23,9 +23,10 @@ namespace Invoice_Run
       {
         EventLog.CreateEventSource(evtLogSrc, "Application");
       }
-
       try
       {
+        var runStartTime = DateTime.Now;
+        EventLog.WriteEntry(evtLogSrc, string.Format("Run started {0}.", runStartTime.ToString()), EventLogEntryType.Information);
         string groupPrefix = "";
         int cycleMonthOffset = -1;
         string accountsLstNm = "Accounts";
@@ -456,6 +457,8 @@ namespace Invoice_Run
           }
           cc.ExecuteQuery();
         }
+        var runEndTime = DateTime.Now;
+        EventLog.WriteEntry(evtLogSrc, string.Format("Run ended {0}, lasting {1} minutes.", runEndTime.ToString(), (runEndTime - runStartTime).TotalMinutes.ToString("0.00")), EventLogEntryType.Information);
       }
       catch (Exception ex)
       {

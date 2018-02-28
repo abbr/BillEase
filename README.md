@@ -147,6 +147,13 @@ where <URL> points to the site holding the five lists and [options] are
 	if billing cycle starts on the first day of each month and Invoice Run 
 	is launched at 12:01AM on the first day of each month, the default offset 
 	of -1 is needed for calculation be performed on last month's data.
+-l|--cycle_calibration_date=<date>
+	Billing cycle calibration date in the format YYYY-MM-DD. This is a past date 
+	that is known to be the start of a billing cycle. Either cycle_calibration_date 
+	or offset_of_cycle_month, but not both, should be supplied in order for the 
+	application to calculate last billing cycle start date. If both are absent, then
+	default value of offset_of_cycle_month is used. cycle_calibration_date doesn't 
+	have default value.
 -b|--billing_period=<string>
 	Billing period in the form <Integer><UOM>. Default to 1m. Allowed UOMs are 
 	<d|m|y> for day, month and year respectively. For example, 1m for 1 month; 

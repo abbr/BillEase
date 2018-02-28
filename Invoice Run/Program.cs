@@ -11,6 +11,7 @@ using System.Net.Security;
 using System.Net;
 using System.Text.RegularExpressions;
 using Itenso.TimePeriod;
+using System.Globalization;
 
 namespace Invoice_Run
 {
@@ -28,13 +29,14 @@ namespace Invoice_Run
         var runStartTime = DateTime.Now;
         EventLog.WriteEntry(evtLogSrc, string.Format("Run started {0}.", runStartTime.ToString()), EventLogEntryType.Information);
         string groupPrefix = "";
-        int cycleMonthOffset = -1;
+        int? cycleMonthOffset = null;
         string accountsLstNm = "Accounts";
         string ratesLstNm = "Rates";
         string fixedConsumptionsLstNm = "Fixed Consumptions";
         string consumptionsLstNm = "Consumptions";
         string chargesLstNm = "Charges";
         string billingPeriodStr = "1m";
+        DateTime? cycleCalibrationDate = null;
 
         Dictionary<string, List<KeyValuePair<string, string>>> listColumnsToCopy = new Dictionary<string, List<KeyValuePair<string, string>>>();
         listColumnsToCopy.Add("Account", new List<KeyValuePair<string, string>>());
@@ -44,6 +46,7 @@ namespace Invoice_Run
                     {"p|prefix_of_group=", v => groupPrefix = v}
                     ,{"o|offset_of_cycle_month=", v => cycleMonthOffset = int.Parse(v)}
                     ,{"b|billing_period=", v => billingPeriodStr = v}
+                    ,{"l|cycle_calibration_date=", v => cycleCalibrationDate = DateTime.ParseExact(v,"yyyy-MM-dd",CultureInfo.InvariantCulture)}
                     ,{"a|accounts_list_name=", v => accountsLstNm = v}
                     ,{"r|rates_list_name=", v => ratesLstNm = v}
                     ,{"f|fixed_consumptions_list_name=", v => fixedConsumptionsLstNm = v}
@@ -84,8 +87,6 @@ namespace Invoice_Run
         var cc = new ClientContext(extraArgs[0]);
         cc.Credentials = System.Net.CredentialCache.DefaultCredentials;
 
-        var billingCycleStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1, 0, 0, 0, DateTimeKind.Local);
-        billingCycleStart = billingCycleStart.AddMonths(cycleMonthOffset);
         Match billingPeriodMatch = Regex.Match(billingPeriodStr, @"(\d)([mdy])");
         int billingPeriod = 0;
         string billingPeriodUOM = null;
@@ -93,6 +94,34 @@ namespace Invoice_Run
         {
           billingPeriod = Int32.Parse(billingPeriodMatch.Groups[1].Value);
           billingPeriodUOM = billingPeriodMatch.Groups[2].Value;
+        }
+
+        var billingCycleStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1, 0, 0, 0, DateTimeKind.Local);
+        if (cycleCalibrationDate != null)
+        {
+          TimeSpan s = billingCycleStart - (DateTime)cycleCalibrationDate;
+          switch (billingPeriodUOM)
+          {
+            case "d":
+              billingCycleStart = billingCycleStart.AddDays(-(s.TotalDays % billingPeriod));
+              break;
+            case "m":
+              int monthDiff = (billingCycleStart.Year - ((DateTime)cycleCalibrationDate).Year) * 12 + billingCycleStart.Month - ((DateTime)cycleCalibrationDate).Month;
+              billingCycleStart = billingCycleStart.AddMonths(-(monthDiff % billingPeriod));
+              break;
+            case "y":
+              int yearDiff = (int)s.TotalDays / 365;
+              billingCycleStart = billingCycleStart.AddYears(-(yearDiff % billingPeriod));
+              break;
+          }
+        }
+        else if (cycleMonthOffset != null)
+        {
+          billingCycleStart = billingCycleStart.AddMonths((int)cycleMonthOffset);
+        }
+        else
+        {
+          billingCycleStart = billingCycleStart.AddMonths(-1);
         }
         DateTime nextBillingcycleStart = DateTime.Now;
         switch (billingPeriodUOM)

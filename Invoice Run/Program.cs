@@ -140,7 +140,73 @@ namespace Invoice_Run
             break;
         }
         TimeRange billingRange = new TimeRange(billingCycleStart, nextBillingcycleStart);
+
+        // delete consumptions associated with deleted fixed consumptions
         var query = new CamlQuery();
+        query.ViewXml = string.Format(@"<View><Query>
+   <Where>
+    <And>
+      <Eq>
+          <FieldRef Name='Cycle' />
+          <Value Type='DateTime'>{0}</Value>
+      </Eq>
+      <And>
+        <IsNull>
+           <FieldRef Name='Fixed_x0020_Consumption_x0020_Re' />
+        </IsNull>
+        <Geq>
+           <FieldRef Name='Fixed_x0020_Consumption_x0020_Re' LookupId='TRUE' />
+           <Value Type=”Lookup”>0</Value>
+        </Geq>
+      </And>
+    </And>
+   </Where>
+</Query></View>", billingCycleStart.ToString("yyyy-MM-dd"));
+        var consumptionLst = cc.Web.Lists.GetByTitle(consumptionsLstNm);
+        var consumptionFC = consumptionLst.Fields;
+        var consumptionDeletionLIC = consumptionLst.GetItems(query);
+        cc.Load(consumptionFC);
+        cc.Load(consumptionDeletionLIC);
+        cc.ExecuteQuery();
+        foreach (var consumptionLI in consumptionDeletionLIC)
+        {
+          consumptionLI.DeleteObject();
+          cc.ExecuteQuery();
+        }
+
+        // delete charges associated with deleted consumptions
+        query = new CamlQuery();
+        query.ViewXml = string.Format(@"<View><Query>
+   <Where>
+    <And>
+      <Eq>
+          <FieldRef Name='Cycle' />
+          <Value Type='DateTime'>{0}</Value>
+      </Eq>
+      <And>
+        <IsNull>
+           <FieldRef Name='Consumption_x0020_Ref' />
+        </IsNull>
+        <Geq>
+           <FieldRef Name='Consumption_x0020_Ref' LookupId='TRUE' />
+           <Value Type=”Lookup”>0</Value>
+        </Geq>
+      </And>
+    </And>
+   </Where>
+</Query></View>", billingCycleStart.ToString("yyyy-MM-dd"));
+        var chgLst = cc.Web.Lists.GetByTitle(chargesLstNm);
+        var chargesDeletionLIC = chgLst.GetItems(query);
+        cc.Load(chargesDeletionLIC);
+        cc.ExecuteQuery();
+        foreach (var chargeLI in chargesDeletionLIC)
+        {
+          chargeLI.DeleteObject();
+          cc.ExecuteQuery();
+        }
+
+        // populate consumptions from fixed consumptions
+        query = new CamlQuery();
         query.ViewXml = string.Format(@"
 <View><Query>
    <Where>
@@ -171,9 +237,6 @@ namespace Invoice_Run
         FieldCollection fixedConsumptionFC = fixedConsumptionsLst.Fields;
         cc.Load(fixedConsumptionFC);
         cc.Load(fixedConsumptionLIC);
-        var consumptionLst = cc.Web.Lists.GetByTitle(consumptionsLstNm);
-        var consumptionFC = consumptionLst.Fields;
-        cc.Load(consumptionFC);
         try
         {
           cc.ExecuteQuery();
@@ -296,7 +359,6 @@ namespace Invoice_Run
         cc.ExecuteQuery();
         var restReadRD = cc.Web.RoleDefinitions.GetByName("Restricted Read");
         var readRD = cc.Web.RoleDefinitions.GetByName("Read");
-        var chgLst = cc.Web.Lists.GetByTitle(chargesLstNm);
 
         foreach (var consumptionLI in consumptionLIC)
         {

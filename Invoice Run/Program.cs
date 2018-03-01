@@ -36,6 +36,7 @@ namespace Invoice_Run
         string consumptionsLstNm = "Consumptions";
         string chargesLstNm = "Charges";
         string billingPeriodStr = "1m";
+        bool isCycleOpen = false;
         DateTime cycleCalibrationDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1, 0, 0, 0, DateTimeKind.Local);
 
         Dictionary<string, List<KeyValuePair<string, string>>> listColumnsToCopy = new Dictionary<string, List<KeyValuePair<string, string>>>();
@@ -81,6 +82,7 @@ namespace Invoice_Run
                       listColumnsToCopy["Consumption"].Add(new KeyValuePair<string, string>(src,dst));
                       }
                     }
+                    ,{"i|is_cycle_open=", v=> isCycleOpen = Convert.ToBoolean(v)}
                 };
         List<String> extraArgs = options.Parse(args);
         ServicePointManager.ServerCertificateValidationCallback = MyCertHandler;

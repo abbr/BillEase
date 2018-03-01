@@ -190,6 +190,10 @@ where <URL> points to the site holding the five lists and [options] are
 	Multiple columns can be defined by adding this option multiple times. The column type
 	in both consumptions and charges lists must match. If a column is also copied from account or
 	rate list, the precedence of overriding in descending order is: consumption, rate, account.
+-i|--is_cycle_open=<true|false>
+	Whether the billing cycle under operation is open or not. If not, then all 
+	consumptions that have been posted to charges are frozen from updates by contributors. 
+	This option tentatively has no effect. Default to false.
 
 
 Examples:

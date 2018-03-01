@@ -37,6 +37,7 @@ namespace Invoice_Run
         string chargesLstNm = "Charges";
         string billingPeriodStr = "1m";
         bool isCycleOpen = false;
+        string lastRunFileName = "billease_last_run.log";
         DateTime cycleCalibrationDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1, 0, 0, 0, DateTimeKind.Local);
 
         Dictionary<string, List<KeyValuePair<string, string>>> listColumnsToCopy = new Dictionary<string, List<KeyValuePair<string, string>>>();
@@ -83,8 +84,19 @@ namespace Invoice_Run
                       }
                     }
                     ,{"i|is_cycle_open=", v=> isCycleOpen = Convert.ToBoolean(v)}
+                    ,{"u|last_run_log_file_name=", v=> lastRunFileName = v}
                 };
         List<String> extraArgs = options.Parse(args);
+        // get last run timestamp
+        var lastRunTs = DateTime.MinValue;
+        try
+        {
+          lastRunTs = DateTime.Parse(System.IO.File.ReadAllText(lastRunFileName));
+        }
+        catch
+        {
+        }
+
         ServicePointManager.ServerCertificateValidationCallback = MyCertHandler;
         var cc = new ClientContext(extraArgs[0]);
         cc.Credentials = System.Net.CredentialCache.DefaultCredentials;
@@ -479,6 +491,8 @@ namespace Invoice_Run
         }
         var runEndTime = DateTime.Now;
         EventLog.WriteEntry(evtLogSrc, string.Format("Run ended {0}, lasting {1} minutes.", runEndTime.ToString(), (runEndTime - runStartTime).TotalMinutes.ToString("0.00")), EventLogEntryType.Information);
+        System.IO.File.Delete(lastRunFileName);
+        System.IO.File.WriteAllText(lastRunFileName, runStartTime.ToString());
       }
       catch (Exception ex)
       {

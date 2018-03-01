@@ -194,7 +194,10 @@ where <URL> points to the site holding the five lists and [options] are
 	Whether the billing cycle under operation is open or not. If not, then all 
 	consumptions that have been posted to charges are frozen from updates by contributors. 
 	This option tentatively has no effect. Default to false.
-
+-u|--last_run_log_file_name=<string>
+	Name of last run log file name. Default to billease_last_run.log. If there are multiple 
+	scheduled tasks created to run the console application, then each should have its own
+	last run log file by supplying a different name for this option.
 
 Examples:
 "Invoice Run.exe" -p "Billing Group - " https://mycorp.com/service/billing

@@ -205,7 +205,7 @@ namespace Invoice_Run
           cc.ExecuteQuery();
         }
 
-        // populate consumptions from fixed consumptions
+        // populate or update consumptions from fixed consumptions
         query = new CamlQuery();
         query.ViewXml = string.Format(@"
 <View><Query>
@@ -262,13 +262,16 @@ namespace Invoice_Run
             var _consumptionLIC = consumptionLst.GetItems(consumptionItemQuery);
             cc.Load(_consumptionLIC);
             cc.ExecuteQuery();
+            ListItem consumptionItem;
             if (_consumptionLIC.Count > 0)
             {
-              continue;
+              consumptionItem = _consumptionLIC[0];
             }
-
-            ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
-            var newConsumptionItem = consumptionLst.AddItem(itemCreateInfo);
+            else
+            {
+              ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+              consumptionItem = consumptionLst.AddItem(itemCreateInfo);
+            }
             foreach (Field field in fixedConsumptionFC)
             {
               if (field.FromBaseType && field.InternalName != "Title")
@@ -282,7 +285,7 @@ namespace Invoice_Run
               {
                 continue;
               }
-              newConsumptionItem[field.InternalName] = fixedConsumptionLI[field.InternalName];
+              consumptionItem[field.InternalName] = fixedConsumptionLI[field.InternalName];
             }
 
             // calculate proration
@@ -312,11 +315,11 @@ namespace Invoice_Run
                   {
                     proratedQty = Convert.ToInt32(proratedQty);
                   }
-                  newConsumptionItem["Quantity"] = proratedQty;
+                  consumptionItem["Quantity"] = proratedQty;
                 }
                 if (fixedConsumptionLI["Amount"] != null)
                 {
-                  newConsumptionItem["Amount"] = ((double)fixedConsumptionLI["Amount"]) * portion;
+                  consumptionItem["Amount"] = ((double)fixedConsumptionLI["Amount"]) * portion;
                 }
               }
             }
@@ -325,11 +328,11 @@ namespace Invoice_Run
               EventLog.WriteEntry(evtLogSrc, string.Format("Error calculating proration for fixed consumption with ID={0}", fixedConsumptionLI["ID"]), EventLogEntryType.Error);
             }
 
-            newConsumptionItem["Cycle"] = billingCycleStart;
+            consumptionItem["Cycle"] = billingCycleStart;
             FieldLookupValue lookup = new FieldLookupValue();
             lookup.LookupId = (int)fixedConsumptionLI["ID"];
-            newConsumptionItem["Fixed_x0020_Consumption_x0020_Re"] = lookup;
-            newConsumptionItem.Update();
+            consumptionItem["Fixed_x0020_Consumption_x0020_Re"] = lookup;
+            consumptionItem.Update();
             cc.ExecuteQuery();
           }
         }
@@ -338,6 +341,8 @@ namespace Invoice_Run
           EventLog.WriteEntry(evtLogSrc, string.Format("Error creating consumption from fixed consumption.\n{0}", ex.ToString()), EventLogEntryType.Error);
         }
 
+
+        // populate or update charge from consumption
         query = new CamlQuery();
         query.ViewXml = string.Format(@"
 <View><Query>

@@ -265,7 +265,7 @@ namespace Invoice_Run
             ListItem consumptionItem;
             if (_consumptionLIC.Count > 0)
             {
-              if (((DateTime)fixedConsumptionLI["Modified"]) < ((DateTime)_consumptionLIC[0]["Modified"]))
+              if (isCycleOpen && ((DateTime)fixedConsumptionLI["Modified"]) < ((DateTime)_consumptionLIC[0]["Modified"]))
               {
                 continue;
               }
@@ -389,7 +389,7 @@ namespace Invoice_Run
           if (chgLIC.Count > 0)
           {
             chgItem = chgLIC[0];
-            if (((DateTime)consumptionLI["Modified"]) < ((DateTime)chgItem["Modified"]))
+            if (isCycleOpen && ((DateTime)consumptionLI["Modified"]) < ((DateTime)chgItem["Modified"]))
             {
               continue;
             }
@@ -528,21 +528,24 @@ namespace Invoice_Run
               ));
           cc.ExecuteQuery();
 
-          foreach (var ra in consumptionLI.RoleAssignments)
+          if (!isCycleOpen)
           {
-            bool addRead = false;
-            foreach (var rdbo in ra.RoleDefinitionBindings)
+            foreach (var ra in consumptionLI.RoleAssignments)
             {
-              if (rdbo.Name == "Contribute")
+              bool addRead = false;
+              foreach (var rdbo in ra.RoleDefinitionBindings)
               {
-                ra.RoleDefinitionBindings.Remove(rdbo);
-                addRead = true;
+                if (rdbo.Name == "Contribute")
+                {
+                  ra.RoleDefinitionBindings.Remove(rdbo);
+                  addRead = true;
+                }
               }
+              if (addRead) ra.RoleDefinitionBindings.Add(readRD);
+              ra.Update();
             }
-            if (addRead) ra.RoleDefinitionBindings.Add(readRD);
-            ra.Update();
+            cc.ExecuteQuery();
           }
-          cc.ExecuteQuery();
         }
 
         var chargesLst = cc.Web.Lists.GetByTitle("Charges");

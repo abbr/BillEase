@@ -86,7 +86,7 @@ namespace Invoice_Run
                     }
                     ,{"O|is_cycle_open=", v=> isCycleOpen = Convert.ToBoolean(v)}
                     ,{"i|incremental=", v=> incremental = Convert.ToBoolean(v)}
-                    ,{"u|last_run_log_file_name=", v=> lastRunFileName = v}
+                    ,{"l|last_run_log_file_name=", v=> lastRunFileName = v}
                 };
         List<String> extraArgs = options.Parse(args);
         if (incremental == null)

@@ -198,7 +198,7 @@ i|--incremental=<true|false>
 	Whether or not update charges incrementally. If incremental, only consumptions modified 
 	since last run will be fetched. By default, incremental is true if billing cycle 
 	is open and false if closed.
--u|--last_run_log_file_name=<string>
+-l|--last_run_log_file_name=<string>
 	Name of last run log file name. Default to billease_last_run.log. If there are multiple 
 	scheduled tasks created to run the console application and all scheduled tasks are set 
 	to the same working directory, then each should have its own last run log file by 

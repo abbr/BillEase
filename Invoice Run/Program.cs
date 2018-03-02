@@ -367,25 +367,6 @@ namespace Invoice_Run
 
         foreach (var consumptionLI in consumptionLIC)
         {
-          // check if charges exists
-          var chgItemQuery = new CamlQuery();
-          chgItemQuery.ViewXml = string.Format(@"
-<View><Query>
-   <Where>
-      <Eq>
-         <FieldRef Name='Consumption_x0020_Ref' LookupId='TRUE' />
-         <Value Type='Lookup'>{0}</Value>
-      </Eq>
-   </Where>
-</Query></View>", consumptionLI["ID"]);
-          var chgLIC = chgLst.GetItems(chgItemQuery);
-          cc.Load(chgLIC);
-          cc.ExecuteQuery();
-          if (chgLIC.Count > 0)
-          {
-            continue;
-          }
-
           // get org item
           var orgItemQuery = new CamlQuery();
           orgItemQuery.ViewXml = string.Format(@"
@@ -417,19 +398,43 @@ namespace Invoice_Run
           var orgItem = orgLIC.First();
           var rateItem = rateLIC.First();
 
-          // create new charges item
-          ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
-          var newChgItem = chgLst.AddItem(itemCreateInfo);
-          newChgItem["Account"] = orgItem["Title"];
-          newChgItem["Title"] = consumptionLI["Title"];
-          newChgItem["Cycle"] = consumptionLI["Cycle"];
-          newChgItem["Unit_x0020_Price"] = rateItem["Unit_x0020_Price"];
-          newChgItem["Denominator"] = rateItem["Denominator"];
-          newChgItem["UOM"] = rateItem["UOM"];
-          newChgItem["Quantity"] = consumptionLI["Quantity"];
+          ListItem chgItem;
+          // check if charges exists
+          var chgItemQuery = new CamlQuery();
+          chgItemQuery.ViewXml = string.Format(@"
+<View><Query>
+   <Where>
+      <Eq>
+         <FieldRef Name='Consumption_x0020_Ref' LookupId='TRUE' />
+         <Value Type='Lookup'>{0}</Value>
+      </Eq>
+   </Where>
+</Query></View>", consumptionLI["ID"]);
+          var chgLIC = chgLst.GetItems(chgItemQuery);
+          cc.Load(chgLIC);
+          cc.ExecuteQuery();
+          if (chgLIC.Count > 0)
+          {
+            chgItem = chgLIC[0];
+            chgItem.ResetRoleInheritance();
+            cc.ExecuteQuery();
+          }
+          else
+          {
+            // create new charges item
+            ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+            chgItem = chgLst.AddItem(itemCreateInfo);
+          }
+          chgItem["Account"] = orgItem["Title"];
+          chgItem["Title"] = consumptionLI["Title"];
+          chgItem["Cycle"] = consumptionLI["Cycle"];
+          chgItem["Unit_x0020_Price"] = rateItem["Unit_x0020_Price"];
+          chgItem["Denominator"] = rateItem["Denominator"];
+          chgItem["UOM"] = rateItem["UOM"];
+          chgItem["Quantity"] = consumptionLI["Quantity"];
           FieldLookupValue lookup = new FieldLookupValue();
           lookup.LookupId = (int)consumptionLI["ID"];
-          newChgItem["Consumption_x0020_Ref"] = lookup;
+          chgItem["Consumption_x0020_Ref"] = lookup;
 
           // the order of list enumeration is important
           foreach (var lstNm in new string[] { "Account", "Rate", "Consumption" })
@@ -458,7 +463,7 @@ namespace Invoice_Run
               {
                 if (item[columnNVP.Key] != null)
                 {
-                  newChgItem[columnNVP.Value] = item[columnNVP.Key];
+                  chgItem[columnNVP.Value] = item[columnNVP.Key];
                 }
               }
               catch
@@ -470,7 +475,7 @@ namespace Invoice_Run
           }
 
           if (consumptionLI["Amount"] != null)
-            newChgItem["Amount"] = consumptionLI["Amount"];
+            chgItem["Amount"] = consumptionLI["Amount"];
           else if (consumptionLI["Quantity"] != null
               && rateItem["Denominator"] != null
               && rateItem["Unit_x0020_Price"] != null
@@ -490,11 +495,11 @@ namespace Invoice_Run
             {
               EventLog.WriteEntry(evtLogSrc, string.Format("Error calculate round up for rate ID={0}, consumption ID={1}", rateItem["ID"], consumptionLI["ID"]), EventLogEntryType.Error);
             }
-            newChgItem["Amount"] = (double)rateItem["Unit_x0020_Price"] * normalizedQty;
+            chgItem["Amount"] = (double)rateItem["Unit_x0020_Price"] * normalizedQty;
           }
-          if (newChgItem.FieldValues.ContainsKey("Amount"))
+          if (chgItem.FieldValues.ContainsKey("Amount"))
           {
-            newChgItem.Update();
+            chgItem.Update();
             cc.ExecuteQuery();
           }
           else

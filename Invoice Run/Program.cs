@@ -265,6 +265,10 @@ namespace Invoice_Run
             ListItem consumptionItem;
             if (_consumptionLIC.Count > 0)
             {
+              if (((DateTime)fixedConsumptionLI["Modified"]) < ((DateTime)_consumptionLIC[0]["Modified"]))
+              {
+                continue;
+              }
               consumptionItem = _consumptionLIC[0];
             }
             else
@@ -367,6 +371,38 @@ namespace Invoice_Run
 
         foreach (var consumptionLI in consumptionLIC)
         {
+          ListItem chgItem;
+          // check if charges exists
+          var chgItemQuery = new CamlQuery();
+          chgItemQuery.ViewXml = string.Format(@"
+<View><Query>
+   <Where>
+      <Eq>
+         <FieldRef Name='Consumption_x0020_Ref' LookupId='TRUE' />
+         <Value Type='Lookup'>{0}</Value>
+      </Eq>
+   </Where>
+</Query></View>", consumptionLI["ID"]);
+          var chgLIC = chgLst.GetItems(chgItemQuery);
+          cc.Load(chgLIC);
+          cc.ExecuteQuery();
+          if (chgLIC.Count > 0)
+          {
+            chgItem = chgLIC[0];
+            if (((DateTime)consumptionLI["Modified"]) < ((DateTime)chgItem["Modified"]))
+            {
+              continue;
+            }
+            chgItem.ResetRoleInheritance();
+            cc.ExecuteQuery();
+          }
+          else
+          {
+            // create new charges item
+            ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+            chgItem = chgLst.AddItem(itemCreateInfo);
+          }
+
           // get org item
           var orgItemQuery = new CamlQuery();
           orgItemQuery.ViewXml = string.Format(@"
@@ -398,33 +434,6 @@ namespace Invoice_Run
           var orgItem = orgLIC.First();
           var rateItem = rateLIC.First();
 
-          ListItem chgItem;
-          // check if charges exists
-          var chgItemQuery = new CamlQuery();
-          chgItemQuery.ViewXml = string.Format(@"
-<View><Query>
-   <Where>
-      <Eq>
-         <FieldRef Name='Consumption_x0020_Ref' LookupId='TRUE' />
-         <Value Type='Lookup'>{0}</Value>
-      </Eq>
-   </Where>
-</Query></View>", consumptionLI["ID"]);
-          var chgLIC = chgLst.GetItems(chgItemQuery);
-          cc.Load(chgLIC);
-          cc.ExecuteQuery();
-          if (chgLIC.Count > 0)
-          {
-            chgItem = chgLIC[0];
-            chgItem.ResetRoleInheritance();
-            cc.ExecuteQuery();
-          }
-          else
-          {
-            // create new charges item
-            ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
-            chgItem = chgLst.AddItem(itemCreateInfo);
-          }
           chgItem["Account"] = orgItem["Title"];
           chgItem["Title"] = consumptionLI["Title"];
           chgItem["Cycle"] = consumptionLI["Cycle"];

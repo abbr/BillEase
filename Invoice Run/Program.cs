@@ -37,7 +37,7 @@ namespace Invoice_Run
         string chargesLstNm = "Charges";
         string billingPeriodStr = "1m";
         bool isCycleOpen = false;
-        bool incremental = true;
+        bool? incremental = null;
         string lastRunFileName = "billease_last_run.log";
         DateTime cycleCalibrationDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1, 0, 0, 0, DateTimeKind.Local);
 
@@ -89,6 +89,10 @@ namespace Invoice_Run
                     ,{"u|last_run_log_file_name=", v=> lastRunFileName = v}
                 };
         List<String> extraArgs = options.Parse(args);
+        if (incremental == null)
+        {
+          incremental = isCycleOpen;
+        }
         ServicePointManager.ServerCertificateValidationCallback = MyCertHandler;
         var cc = new ClientContext(extraArgs[0]);
         cc.Credentials = System.Net.CredentialCache.DefaultCredentials;
@@ -357,7 +361,10 @@ namespace Invoice_Run
 
         // populate or update charge from consumption
         query = new CamlQuery();
-        query.ViewXml = string.Format(@"
+        string viewXml = null;
+        if (incremental == false)
+        {
+          viewXml = string.Format(@"
 <View><Query>
    <Where>
       <Eq>
@@ -366,6 +373,26 @@ namespace Invoice_Run
       </Eq>
    </Where>
 </Query></View>", billingCycleStart.ToString("yyyy-MM-dd"));
+        }
+        else
+        {
+          viewXml = string.Format(@"
+<View><Query>
+   <Where>
+    <And>
+      <Eq>
+         <FieldRef Name='Cycle' />
+         <Value Type='DateTime'>{0}</Value>
+      </Eq>
+      <Gt>
+         <FieldRef Name='Modified' />
+         <Value IncludeTimeValue='true' Type='DateTime'>{1}</Value>
+      </Gt>
+    </And>
+   </Where>
+</Query></View>", billingCycleStart.ToString("yyyy-MM-dd"), lastRunTs.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+        }
+        query.ViewXml = viewXml;
 
         var consumptionLIC = consumptionLst.GetItems(query);
         cc.Load(consumptionLIC, items => items.IncludeWithDefaultProperties(

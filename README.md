@@ -190,10 +190,14 @@ where <URL> points to the site holding the five lists and [options] are
 	Multiple columns can be defined by adding this option multiple times. The column type
 	in both consumptions and charges lists must match. If a column is also copied from account or
 	rate list, the precedence of overriding in descending order is: consumption, rate, account.
--i|--is_cycle_open=<true|false>
+-O|--is_cycle_open=<true|false>
 	Whether the billing cycle under operation is open or not. If not, then all 
 	consumptions that have been posted to charges are frozen from updates by contributors. 
 	This option tentatively has no effect. Default to false.
+i|--incremental=<true|false>
+	Whether or not update charges incrementally. If incremental, only consumptions modified 
+	since last run will be fetched. By default, incremental is true if billing cycle 
+	is open and false if closed.
 -u|--last_run_log_file_name=<string>
 	Name of last run log file name. Default to billease_last_run.log. If there are multiple 
 	scheduled tasks created to run the console application and all scheduled tasks are set 

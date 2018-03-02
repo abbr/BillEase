@@ -37,6 +37,7 @@ namespace Invoice_Run
         string chargesLstNm = "Charges";
         string billingPeriodStr = "1m";
         bool isCycleOpen = false;
+        bool incremental = true;
         string lastRunFileName = "billease_last_run.log";
         DateTime cycleCalibrationDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1, 0, 0, 0, DateTimeKind.Local);
 
@@ -83,20 +84,11 @@ namespace Invoice_Run
                       listColumnsToCopy["Consumption"].Add(new KeyValuePair<string, string>(src,dst));
                       }
                     }
-                    ,{"i|is_cycle_open=", v=> isCycleOpen = Convert.ToBoolean(v)}
+                    ,{"O|is_cycle_open=", v=> isCycleOpen = Convert.ToBoolean(v)}
+                    ,{"i|incremental=", v=> incremental = Convert.ToBoolean(v)}
                     ,{"u|last_run_log_file_name=", v=> lastRunFileName = v}
                 };
         List<String> extraArgs = options.Parse(args);
-        // get last run timestamp
-        var lastRunTs = DateTime.MinValue;
-        try
-        {
-          lastRunTs = DateTime.Parse(System.IO.File.ReadAllText(lastRunFileName));
-        }
-        catch
-        {
-        }
-
         ServicePointManager.ServerCertificateValidationCallback = MyCertHandler;
         var cc = new ClientContext(extraArgs[0]);
         cc.Credentials = System.Net.CredentialCache.DefaultCredentials;
@@ -140,6 +132,23 @@ namespace Invoice_Run
             break;
         }
         TimeRange billingRange = new TimeRange(billingCycleStart, nextBillingcycleStart);
+
+        // get last run timestamp
+        var lastRunTs = DateTime.MinValue;
+        try
+        {
+          string temp = System.IO.File.ReadAllText(lastRunFileName);
+          Match m = Regex.Match(temp, @"(.*)\n(.*)");
+          DateTime lastRunCycle = DateTime.Parse(m.Groups[1].Value);
+          if (lastRunCycle.Date == billingCycleStart.Date)
+          {
+            lastRunTs = DateTime.Parse(m.Groups[2].Value);
+          }
+        }
+        catch
+        {
+        }
+
 
         // delete consumptions associated with deleted fixed consumptions
         var query = new CamlQuery();
@@ -576,7 +585,7 @@ namespace Invoice_Run
         var runEndTime = DateTime.Now;
         EventLog.WriteEntry(evtLogSrc, string.Format("Run ended {0}, lasting {1} minutes.", runEndTime.ToString(), (runEndTime - runStartTime).TotalMinutes.ToString("0.00")), EventLogEntryType.Information);
         System.IO.File.Delete(lastRunFileName);
-        System.IO.File.WriteAllText(lastRunFileName, runStartTime.ToString());
+        System.IO.File.WriteAllText(lastRunFileName, billingCycleStart.ToShortDateString() + "\n" + runStartTime.ToString());
       }
       catch (Exception ex)
       {

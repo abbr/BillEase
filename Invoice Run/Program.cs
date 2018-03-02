@@ -552,20 +552,20 @@ namespace Invoice_Run
             EventLog.WriteEntry(evtLogSrc, "Cannot calculate amount for consumption item " + consumptionLI["ID"], EventLogEntryType.Error);
           }
 
-          if (!consumptionLI.HasUniqueRoleAssignments)
-          {
-            consumptionLI.BreakRoleInheritance(true, false);
-            cc.ExecuteQuery();
-          }
-          cc.Load(consumptionLI.RoleAssignments, items => items.Include(
-              ra => ra.RoleDefinitionBindings.Include(
-                  rdb => rdb.Name
-                  )
-              ));
-          cc.ExecuteQuery();
-
           if (!isCycleOpen)
           {
+            if (!consumptionLI.HasUniqueRoleAssignments)
+            {
+              consumptionLI.BreakRoleInheritance(true, false);
+              cc.ExecuteQuery();
+            }
+            cc.Load(consumptionLI.RoleAssignments, items => items.Include(
+                ra => ra.RoleDefinitionBindings.Include(
+                    rdb => rdb.Name
+                    )
+                ));
+            cc.ExecuteQuery();
+
             foreach (var ra in consumptionLI.RoleAssignments)
             {
               bool addRead = false;

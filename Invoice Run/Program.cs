@@ -49,7 +49,7 @@ namespace Invoice_Run
                     {"p|prefix_of_group=", v => groupPrefix = v}
                     ,{"o|offset_of_cycle=", v => cycleOffset = int.Parse(v)}
                     ,{"b|billing_period=", v => billingPeriodStr = v}
-                    ,{"l|cycle_calibration_date=", v => cycleCalibrationDate = DateTime.ParseExact(v,"yyyy-MM-dd",CultureInfo.InvariantCulture)}
+                    ,{"C|cycle_calibration_date=", v => cycleCalibrationDate = DateTime.ParseExact(v,"yyyy-MM-dd",CultureInfo.InvariantCulture)}
                     ,{"a|accounts_list_name=", v => accountsLstNm = v}
                     ,{"r|rates_list_name=", v => ratesLstNm = v}
                     ,{"f|fixed_consumptions_list_name=", v => fixedConsumptionsLstNm = v}

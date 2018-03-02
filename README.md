@@ -146,7 +146,7 @@ where <URL> points to the site holding the five lists and [options] are
 	Billing period in the form <Integer><UOM>. Default to 1m. Allowed UOMs are 
 	<d|m|y> for day, month and year respectively. For example, 1m for 1 month; 
 	14d for 2 weeks; 3m for a quarter.
--l|--cycle_calibration_date=<date>
+-C|--cycle_calibration_date=<date>
 	Billing cycle calibration date in the format YYYY-MM-DD. This is a past date 
 	that is known to be the start of a billing cycle. Default value is the first day
 	of the current month the program is running.

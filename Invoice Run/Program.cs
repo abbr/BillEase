@@ -49,13 +49,13 @@ namespace Invoice_Run
                     {"p|prefix_of_group=", v => groupPrefix = v}
                     ,{"o|offset_of_cycle=", v => cycleOffset = int.Parse(v)}
                     ,{"b|billing_period=", v => billingPeriodStr = v}
-                    ,{"C|cycle_calibration_date=", v => cycleCalibrationDate = DateTime.ParseExact(v,"yyyy-MM-dd",CultureInfo.InvariantCulture)}
+                    ,{"d|cycle_calibration_date=", v => cycleCalibrationDate = DateTime.ParseExact(v,"yyyy-MM-dd",CultureInfo.InvariantCulture)}
                     ,{"a|accounts_list_name=", v => accountsLstNm = v}
                     ,{"r|rates_list_name=", v => ratesLstNm = v}
                     ,{"f|fixed_consumptions_list_name=", v => fixedConsumptionsLstNm = v}
                     ,{"c|consumptions_list_name=", v => consumptionsLstNm = v}
                     ,{"h|charges_list_name=", v => chargesLstNm = v}
-                    ,{"n|account_columns_to_copy=", v => {
+                    ,{"A|account_columns_to_copy=", v => {
                       var src = v;
                       var dst = v;
                       if(v.Contains(":")){
@@ -65,7 +65,7 @@ namespace Invoice_Run
                       listColumnsToCopy["Account"].Add(new KeyValuePair<string, string>(src,dst));
                       }
                     }
-                    ,{"t|rate_columns_to_copy=", v => {
+                    ,{"R|rate_columns_to_copy=", v => {
                       var src = v;
                       var dst = v;
                       if(v.Contains(":")){
@@ -74,7 +74,7 @@ namespace Invoice_Run
                       }
                       listColumnsToCopy["Rate"].Add(new KeyValuePair<string, string>(src,dst));}
                     }
-                    ,{"s|consumption_columns_to_copy=", v => {
+                    ,{"C|consumption_columns_to_copy=", v => {
                                            var src = v;
                       var dst = v;
                       if(v.Contains(":")){

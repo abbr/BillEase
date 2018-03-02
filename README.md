@@ -146,7 +146,7 @@ where <URL> points to the site holding the five lists and [options] are
 	Billing period in the form <Integer><UOM>. Default to 1m. Allowed UOMs are 
 	<d|m|y> for day, month and year respectively. For example, 1m for 1 month; 
 	14d for 2 weeks; 3m for a quarter.
--C|--cycle_calibration_date=<date>
+-d|--cycle_calibration_date=<date>
 	Billing cycle calibration date in the format YYYY-MM-DD. This is a past date 
 	that is known to be the start of a billing cycle. Default value is the first day
 	of the current month the program is running.
@@ -165,7 +165,7 @@ where <URL> points to the site holding the five lists and [options] are
 	Name of consumptions list if renamed.
 -h|--charges_list_name=<string>
 	Name of charges list if renamed.
--n|--account_columns_to_copy=<string>
+-A|--account_columns_to_copy=<string>
 	Name of custom column in accounts list to copy over to charges list in the format 
 	<source_name>[:<target_name>]. Target name can be omitted if same as source name.
 	The column name is not display name, but rather internal field name which you can find in the 
@@ -174,7 +174,7 @@ where <URL> points to the site holding the five lists and [options] are
 	in both accounts and charges lists must match. If a column is also copied from rate or
 	consumption list, the precedence of overriding in descending order is: consumption, rate, 
 	account.
--t|--rate_columns_to_copy=<string>
+-R|--rate_columns_to_copy=<string>
 	Name of custom column in rates list to copy over to charges list in the format <source_name>
 	[:<target_name>]. Target name can be omitted if same as source name. 
 	The column name is not display name, but rather internal field name which you can find in the 
@@ -182,7 +182,7 @@ where <URL> points to the site holding the five lists and [options] are
 	Multiple columns can be	defined by adding this option multiple times. The column type	in both
 	rates and charges lists	must match. If a column is also copied from account or consumption list, 
 	the precedence of overriding in descending order is: consumption, rate,	account.
--s|--consumption_columns_to_copy=<string>
+-C|--consumption_columns_to_copy=<string>
 	Name of custom column in consumptions list to copy over to charges list in the format 
 	<source_name>[:<target_name>]. Target name can be omitted if same as source name. 
 	The column name is not display name, but rather internal field name which you can find in the 

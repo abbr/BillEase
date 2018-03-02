@@ -141,12 +141,11 @@ namespace Invoice_Run
         var lastRunTs = DateTime.MinValue;
         try
         {
-          string temp = System.IO.File.ReadAllText(lastRunFileName);
-          Match m = Regex.Match(temp, @"(.*)\n(.*)");
-          DateTime lastRunCycle = DateTime.Parse(m.Groups[1].Value);
+          string[] lines = System.IO.File.ReadAllLines(lastRunFileName);
+          DateTime lastRunCycle = DateTime.Parse(lines[0]);
           if (lastRunCycle.Date == billingCycleStart.Date)
           {
-            lastRunTs = DateTime.Parse(m.Groups[2].Value);
+            lastRunTs = DateTime.Parse(lines[1]);
           }
         }
         catch
@@ -612,7 +611,7 @@ namespace Invoice_Run
         var runEndTime = DateTime.Now;
         EventLog.WriteEntry(evtLogSrc, string.Format("Run ended {0}, lasting {1} minutes.", runEndTime.ToString(), (runEndTime - runStartTime).TotalMinutes.ToString("0.00")), EventLogEntryType.Information);
         System.IO.File.Delete(lastRunFileName);
-        System.IO.File.WriteAllText(lastRunFileName, billingCycleStart.ToShortDateString() + "\n" + runStartTime.ToString());
+        System.IO.File.WriteAllLines(lastRunFileName, new string[] { billingCycleStart.ToShortDateString(), runStartTime.ToString() });
       }
       catch (Exception ex)
       {

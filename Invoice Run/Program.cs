@@ -106,20 +106,20 @@ namespace Invoice_Run
           billingPeriodUOM = billingPeriodMatch.Groups[2].Value;
         }
 
-        var billingCycleStart = cycleCalibrationDate;
+        var billingCycleStart = DateTime.Now;
         TimeSpan s = billingCycleStart - cycleCalibrationDate;
         switch (billingPeriodUOM)
         {
           case "d":
-            billingCycleStart = billingCycleStart.AddDays(-(s.TotalDays % billingPeriod) + cycleOffset * billingPeriod);
+            billingCycleStart = cycleCalibrationDate.AddDays(s.TotalDays - (s.TotalDays % billingPeriod) + cycleOffset * billingPeriod);
             break;
           case "m":
             int monthDiff = (billingCycleStart.Year - cycleCalibrationDate.Year) * 12 + billingCycleStart.Month - cycleCalibrationDate.Month;
-            billingCycleStart = billingCycleStart.AddMonths(-(monthDiff % billingPeriod) + cycleOffset * billingPeriod);
+            billingCycleStart = cycleCalibrationDate.AddMonths(monthDiff - (monthDiff % billingPeriod) + cycleOffset * billingPeriod);
             break;
           case "y":
             int yearDiff = (int)s.TotalDays / 365;
-            billingCycleStart = billingCycleStart.AddYears(-(yearDiff % billingPeriod) + cycleOffset * billingPeriod);
+            billingCycleStart = cycleCalibrationDate.AddYears(yearDiff - (yearDiff % billingPeriod) + cycleOffset * billingPeriod);
             break;
         }
         DateTime nextBillingcycleStart = DateTime.Now;

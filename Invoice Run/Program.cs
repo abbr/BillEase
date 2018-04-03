@@ -138,7 +138,7 @@ namespace Invoice_Run
         TimeRange billingRange = new TimeRange(billingCycleStart, nextBillingcycleStart);
 
         // get last run timestamp
-        var lastRunTs = DateTime.MinValue;
+        var lastRunTs = new DateTime(1970, 01, 01);
         try
         {
           string[] lines = System.IO.File.ReadAllLines(lastRunFileName);

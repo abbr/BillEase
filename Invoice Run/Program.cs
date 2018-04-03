@@ -615,7 +615,7 @@ namespace Invoice_Run
       }
       catch (Exception ex)
       {
-        EventLog.WriteEntry(evtLogSrc, ex.ToString(), EventLogEntryType.Error);
+        EventLog.WriteEntry(evtLogSrc, string.Format("{0}\nStack Trace:\n{1}", ex.ToString(), ex.StackTrace), EventLogEntryType.Error);
         throw;
       }
     }

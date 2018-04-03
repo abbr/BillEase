@@ -180,8 +180,9 @@ namespace Invoice_Run
         cc.Load(consumptionFC);
         cc.Load(consumptionDeletionLIC);
         cc.ExecuteQuery();
-        foreach (var consumptionLI in consumptionDeletionLIC)
+        while (consumptionDeletionLIC.Count > 0)
         {
+          var consumptionLI = consumptionDeletionLIC[0];
           consumptionLI.DeleteObject();
           cc.ExecuteQuery();
         }
@@ -211,8 +212,9 @@ namespace Invoice_Run
         var chargesDeletionLIC = chgLst.GetItems(query);
         cc.Load(chargesDeletionLIC);
         cc.ExecuteQuery();
-        foreach (var chargeLI in chargesDeletionLIC)
+        while (chargesDeletionLIC.Count > 0)
         {
+          var chargeLI = chargesDeletionLIC[0];
           chargeLI.DeleteObject();
           cc.ExecuteQuery();
         }
@@ -615,7 +617,7 @@ namespace Invoice_Run
       }
       catch (Exception ex)
       {
-        EventLog.WriteEntry(evtLogSrc, string.Format("{0}\nStack Trace:\n{1}", ex.ToString(), ex.StackTrace), EventLogEntryType.Error);
+        EventLog.WriteEntry(evtLogSrc, string.Format("{0}\n", ex.ToString()), EventLogEntryType.Error);
         throw;
       }
     }

@@ -359,7 +359,31 @@ namespace Invoice_Run
           EventLog.WriteEntry(evtLogSrc, string.Format("Error creating consumption from fixed consumption.\n{0}", ex.ToString()), EventLogEntryType.Error);
         }
 
-
+        // set incremental to false if there are updated accounts or rates since last run, 
+        foreach (var lstNm in new string[] { ratesLstNm, accountsLstNm })
+        {
+          if (incremental != false)
+          {
+            query = new CamlQuery();
+            query.ViewXml = string.Format(@"
+<View><Query>
+  <Where>
+    <Gt>
+        <FieldRef Name='Modified' />
+        <Value IncludeTimeValue='true' Type='DateTime'>{0}</Value>
+    </Gt>
+  </Where>
+</Query></View>", lastRunTs.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+            var lst = cc.Web.Lists.GetByTitle(lstNm);
+            var lic = lst.GetItems(query);
+            cc.Load(lic);
+            cc.ExecuteQuery();
+            if (lic.Count > 0)
+            {
+              incremental = false;
+            }
+          }
+        }
         // populate or update charge from consumption
         query = new CamlQuery();
         string viewXml = null;

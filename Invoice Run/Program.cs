@@ -366,14 +366,17 @@ namespace Invoice_Run
           {
             query = new CamlQuery();
             query.ViewXml = string.Format(@"
-<View><Query>
-  <Where>
-    <Gt>
-        <FieldRef Name='Modified' />
-        <Value IncludeTimeValue='true' Type='DateTime'>{0}</Value>
-    </Gt>
-  </Where>
-</Query></View>", lastRunTs.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+<View>
+  <Query>
+    <Where>
+      <Gt>
+          <FieldRef Name='Modified' />
+          <Value IncludeTimeValue='true' Type='DateTime'>{0}</Value>
+      </Gt>
+    </Where>
+  </Query>
+  <RowLimit>1</RowLimit>
+</View>", lastRunTs.ToString("yyyy-MM-ddTHH:mm:ssZ"));
             var lst = cc.Web.Lists.GetByTitle(lstNm);
             var lic = lst.GetItems(query);
             cc.Load(lic);

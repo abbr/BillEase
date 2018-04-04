@@ -130,15 +130,17 @@ Item level proration is supported through the *Prorated* list column. If this fi
 The gem of *BillEase* is the console application *Invoice Run.exe*. It provides automation and turns the five SharePoint lists into a workable solution. Without it the SharePoint lists are merely data repository. Each run of *Invoice Run.exe* affects one billing cycle. *Invoice Run.exe* is intended to be launched by one or more scheduled tasks on folllowing occassions:
 
 * At the close of each billing cycle to process all consumptions for the closing billing cycle. In this case set option *is_cycle_open* to *false*, or leave unset since *false* is the default. This is a mandatory occassion so there must be a scheduled task created for this purpose.
-* Periodically, say hourly, to process consumptions for the current open billing cycle. In this case set option *is_cycle_open* to true. This is an optional occassion. If a scheduled task is created for this occassion, then user will be able to see charges in current open billing cycle. Updates and deletes to consumptions and fixed consumptions will be reflected in charges.
+* Periodically, say hourly, to process consumptions for the current open billing cycle. In this case set option *is_cycle_open* to true. This is an optional occassion. If a scheduled task is created for this occassion, then user will be able to see charges in current open billing cycle. Updates and deletions to fixed consumptions and consumptions will be reflected in consumptions and charges respectively.
 
 When invoked, *Invoice Run.exe* performs following tasks:
 
-1. For each fixed consumption item with service period overlapping the affected billing period, create a consumption item if not already exists.
-2. For each consumption item in affected billing cycle, create a charge item if not already exists. The values of charge item are copied or calculated using data directly or indirectly obtained from consumption item as described in [Charges](#charges) list above. If option *incremental* is true, then only consumption items modified since last run in affected billing cycle are included.
-3. If the billing cycle is closed, then break the permission inheritance of each consumption item in affected billing cycle if not already done so. Then convert all *Contribute* permissions to *Read*.
-4. Break the permission inheritance of each charge item created in affected billing cycle if not already done so. 
-5. For each charge item in affected billing cycle, grant group *"&lt;prefix&gt;&lt;account&gt;"* read-only access if not already done so.
+1. Delete consumptions associated with deleted fixed consumptions.
+2. Delete charges associated with deleted consumptions.
+3. For each fixed consumption item with service period overlapping the affected billing period, either create a new or update an existing consumption item.
+4. For each consumption item in affected billing cycle, either create a new or update an existing charge item. The values of charge item are copied or calculated using data directly or indirectly obtained from consumption item as described in [Charges](#charges) list above. If option *incremental* is true, then only consumption items modified since last run in affected billing cycle are included.
+5. If the billing cycle is closed, then break the permission inheritance of each consumption item in affected billing cycle if not already done so. Then convert all *Contribute* permissions to *Read*.
+6. Break the permission inheritance of each charge item created in affected billing cycle if not already done so. 
+7. For each charge item in affected billing cycle, grant group *"&lt;prefix&gt;&lt;account&gt;"* read-only access if not already done so.
 
 *Invoice Run.exe* expects following call syntax:
 ```

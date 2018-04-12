@@ -279,7 +279,7 @@ namespace Invoice_Run
             ListItem consumptionItem;
             if (_consumptionLIC.Count > 0)
             {
-              if (isCycleOpen && ((DateTime)fixedConsumptionLI["Modified"]) < ((DateTime)_consumptionLIC[0]["Modified"]))
+              if (((DateTime)fixedConsumptionLI["Modified"]) < ((DateTime)_consumptionLIC[0]["Modified"]))
               {
                 continue;
               }

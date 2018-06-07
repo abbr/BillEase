@@ -453,7 +453,7 @@ namespace Invoice_Run
           if (chgLIC.Count > 0)
           {
             chgItem = chgLIC[0];
-            if (isCycleOpen && ((DateTime)consumptionLI["Modified"]) < ((DateTime)chgItem["Modified"]))
+            if (isCycleOpen && incremental != false && ((DateTime)consumptionLI["Modified"]) < ((DateTime)chgItem["Modified"]))
             {
               continue;
             }

@@ -256,9 +256,11 @@ namespace Invoice_Run
           cc.ExecuteQuery();
           foreach (var fixedConsumptionLI in fixedConsumptionLIC)
           {
-            // check if consumption exists for the current billing cycle
-            var consumptionItemQuery = new CamlQuery();
-            consumptionItemQuery.ViewXml = string.Format(@"
+            try
+            {
+              // check if consumption exists for the current billing cycle
+              var consumptionItemQuery = new CamlQuery();
+              consumptionItemQuery.ViewXml = string.Format(@"
 <View><Query>
    <Where>
     <And>
@@ -273,85 +275,90 @@ namespace Invoice_Run
     </And>
    </Where>
 </Query></View>", fixedConsumptionLI["ID"], billingCycleStart.ToString("yyyy-MM-dd"));
-            var _consumptionLIC = consumptionLst.GetItems(consumptionItemQuery);
-            cc.Load(_consumptionLIC);
-            cc.ExecuteQuery();
-            ListItem consumptionItem;
-            if (_consumptionLIC.Count > 0)
-            {
-              if (((DateTime)fixedConsumptionLI["Modified"]) < ((DateTime)_consumptionLIC[0]["Modified"]))
+              var _consumptionLIC = consumptionLst.GetItems(consumptionItemQuery);
+              cc.Load(_consumptionLIC);
+              cc.ExecuteQuery();
+              ListItem consumptionItem;
+              if (_consumptionLIC.Count > 0)
               {
-                continue;
+                if (((DateTime)fixedConsumptionLI["Modified"]) < ((DateTime)_consumptionLIC[0]["Modified"]))
+                {
+                  continue;
+                }
+                consumptionItem = _consumptionLIC[0];
               }
-              consumptionItem = _consumptionLIC[0];
-            }
-            else
-            {
-              ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
-              consumptionItem = consumptionLst.AddItem(itemCreateInfo);
-            }
-            foreach (Field field in fixedConsumptionFC)
-            {
-              if (field.FromBaseType && field.InternalName != "Title")
+              else
               {
-                continue;
+                ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
+                consumptionItem = consumptionLst.AddItem(itemCreateInfo);
+              }
+              foreach (Field field in fixedConsumptionFC)
+              {
+                if (field.FromBaseType && field.InternalName != "Title")
+                {
+                  continue;
+                }
+
+                if (consumptionFC.FirstOrDefault(f =>
+                     (!f.FromBaseType || f.InternalName == "Title") && f.InternalName == field.InternalName
+                ) == null)
+                {
+                  continue;
+                }
+                consumptionItem[field.InternalName] = fixedConsumptionLI[field.InternalName];
               }
 
-              if (consumptionFC.FirstOrDefault(f =>
-                   (!f.FromBaseType || f.InternalName == "Title") && f.InternalName == field.InternalName
-              ) == null)
+              // calculate proration
+              try
               {
-                continue;
-              }
-              consumptionItem[field.InternalName] = fixedConsumptionLI[field.InternalName];
-            }
-
-            // calculate proration
-            try
-            {
-              if (fixedConsumptionLI["Prorated"] != null &&
-                fixedConsumptionLI["Prorated"].ToString().Contains("Yes")
-                )
-              {
-                DateTime serviceStart = DateTime.MinValue;
-                DateTime serviceEnd = DateTime.MaxValue;
-                if (fixedConsumptionLI["Service_x0020_Start"] != null)
+                if (fixedConsumptionLI["Prorated"] != null &&
+                  fixedConsumptionLI["Prorated"].ToString().Contains("Yes")
+                  )
                 {
-                  serviceStart = ((DateTime)fixedConsumptionLI["Service_x0020_Start"]).ToLocalTime();
-                }
-                if (fixedConsumptionLI["Service_x0020_End"] != null)
-                {
-                  serviceEnd = ((DateTime)fixedConsumptionLI["Service_x0020_End"]).ToLocalTime();
-                }
-                TimeRange serviceRange = new TimeRange(serviceStart, serviceEnd);
-                ITimeRange overlap = serviceRange.GetIntersection(billingRange);
-                double portion = overlap.Duration.TotalDays / billingRange.Duration.TotalDays;
-                if (fixedConsumptionLI["Quantity"] != null)
-                {
-                  var proratedQty = ((double)fixedConsumptionLI["Quantity"]) * portion;
-                  if (fixedConsumptionLI["Prorated"].ToString() != "Yes")
+                  DateTime serviceStart = DateTime.MinValue;
+                  DateTime serviceEnd = DateTime.MaxValue;
+                  if (fixedConsumptionLI["Service_x0020_Start"] != null)
                   {
-                    proratedQty = Convert.ToInt32(proratedQty);
+                    serviceStart = ((DateTime)fixedConsumptionLI["Service_x0020_Start"]).ToLocalTime();
                   }
-                  consumptionItem["Quantity"] = proratedQty;
-                }
-                if (fixedConsumptionLI["Amount"] != null)
-                {
-                  consumptionItem["Amount"] = ((double)fixedConsumptionLI["Amount"]) * portion;
+                  if (fixedConsumptionLI["Service_x0020_End"] != null)
+                  {
+                    serviceEnd = ((DateTime)fixedConsumptionLI["Service_x0020_End"]).ToLocalTime();
+                  }
+                  TimeRange serviceRange = new TimeRange(serviceStart, serviceEnd);
+                  ITimeRange overlap = serviceRange.GetIntersection(billingRange);
+                  double portion = overlap.Duration.TotalDays / billingRange.Duration.TotalDays;
+                  if (fixedConsumptionLI["Quantity"] != null)
+                  {
+                    var proratedQty = ((double)fixedConsumptionLI["Quantity"]) * portion;
+                    if (fixedConsumptionLI["Prorated"].ToString() != "Yes")
+                    {
+                      proratedQty = Convert.ToInt32(proratedQty);
+                    }
+                    consumptionItem["Quantity"] = proratedQty;
+                  }
+                  if (fixedConsumptionLI["Amount"] != null)
+                  {
+                    consumptionItem["Amount"] = ((double)fixedConsumptionLI["Amount"]) * portion;
+                  }
                 }
               }
-            }
-            catch
-            {
-              EventLog.WriteEntry(evtLogSrc, string.Format("Error calculating proration for fixed consumption with ID={0}", fixedConsumptionLI["ID"]), EventLogEntryType.Error);
-            }
+              catch
+              {
+                EventLog.WriteEntry(evtLogSrc, string.Format("Error calculating proration for fixed consumption with ID={0}", fixedConsumptionLI["ID"]), EventLogEntryType.Error);
+              }
 
-            consumptionItem["Cycle"] = billingCycleStart;
-            FieldLookupValue lookup = new FieldLookupValue();
-            lookup.LookupId = (int)fixedConsumptionLI["ID"];
-            consumptionItem["Fixed_x0020_Consumption_x0020_Re"] = lookup;
-            consumptionItem.Update();
-            cc.ExecuteQuery();
+              consumptionItem["Cycle"] = billingCycleStart;
+              FieldLookupValue lookup = new FieldLookupValue();
+              lookup.LookupId = (int)fixedConsumptionLI["ID"];
+              consumptionItem["Fixed_x0020_Consumption_x0020_Re"] = lookup;
+              consumptionItem.Update();
+              cc.ExecuteQuery();
+            }
+            catch (Exception ex)
+            {
+              EventLog.WriteEntry(evtLogSrc, string.Format("Error creating consumption from fixed consumption with ID {0}.\n{1}", (int)fixedConsumptionLI["ID"], ex.ToString()), EventLogEntryType.Error);
+            }
           }
         }
         catch (Exception ex)

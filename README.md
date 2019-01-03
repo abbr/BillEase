@@ -31,12 +31,12 @@ In a large organization, a support division often provides ongoing services to o
 ## Overview
 *BillEase* consists of five SharePoint custom lists packaged into a SharePoint site template solution file *Service Billing.wsp* and a console application called *Invoice Run.exe*. The custom lists are:
   * *Accounts* - contains client information
-  * *Rates* - defines services and corresponding rates
+  * *Rates* - defines services, i.e. billable line item types, and corresponding rates
   * *Consumptions* - is used to upload meter readings
+  * *Fixed Consumptions* - contains pre-defined fixed-quantity consumptions to be posted to *Consumptions* list automatically
   * *Charges* - auto-populated line items with amount computed from rates and consumption. 
-  * *Fixed Consumptions* - contains pre-defined fixed-quantity consumptions to be posted to *Consumptions* list periodically
 
-*Invoice Run.exe* is intended to be put into a scheduled task to run at the end of each billing cycle to create charge line items.
+*Invoice Run.exe* is intended to be put into a scheduled task to run periodically to create consumptions from fixed consumptions, and to create charges from consumptions.
 
 *BillEase* is intended to be accessed by four types of users with following permissions:
 
@@ -53,16 +53,18 @@ In a large organization, a support division often provides ongoing services to o
    3. Add client users who are allowed to see charges to an account to the corresponding groups.
    4. Setup and adjust permissions as needed. For example, when creating the SharePoint site from solution, by default site contributors have write permission to all lists. To match the access permission described above, you may want to change the default permission to read-only, then grant contributors write access to *Consumptions* list by breaking the permission inheritance.
    5. (Optional) Populate pre-defined fixed-quantity consumptions in *Fixed Consumptions* list
-2. Recurring activities:
-   1. Near the end of each billing cycle, stage meter readings except for *Fixed Consumptions* into an Excel spreadsheet with column order matching the *Consumptions* list view.
+2. Recurring activities
+
+   Prior to the closing of a billing cycle, all meter readings have to be loaded to *Consumptions* list. The list can be populated item by item on an ongoing basis using the SharePoint built-in form, or bulk uploaded. To bulk upload
+   1. stage meter readings except for *Fixed Consumptions* into an Excel spreadsheet with column order matching the *Consumptions* list view.
    2. Select the range of data in Excel and press Ctrl-C to copy. Open the *Datasheet View* of *Consumptions* list in Internet Explorer. click the second column (by default *Title*) of the last empty row in the *Datasheet View* marked by asterisk, and press Ctrl-V to paste the data range to the list. This completes the bulk loading process. Data uploaded can be modified as long as the billing cycle is not closed.
 
-Once above activities are performed, rest processes are handled automatically by *Invoice Run.exe*. Clients can see their charge line items in *Charges* list. They can export the list to Excel for further analysis.
+Once above activities are performed, rest processings are handled automatically by *Invoice Run.exe*. Clients can see their charge line items in *Charges* list. They can export the list to Excel for further analysis.
 
 ## Components
 
 ### SharePoint Custom Lists
-*BillEase* depends on list and column names described below to function. Extending a list is allowed as long as these columns are not deleted. Renaming these columns are allowed, however. To rename a list, make sure to supply the new name to *Invoice Run.exe* documented in section [Console Application](#console-application) below.
+*BillEase* depends on lists and containing columns described below to function. Extending a list is allowed as long as documented columns are not deleted. Renaming lists and columns are allowed, however. To rename a list, make sure to supply the new name to *Invoice Run.exe* documented in section [Console Application](#console-application) below.
 
 #### Accounts
 *Accounts* contain client information. Only *Title* column is mandatory. Changing the name of an account is allowed. However, the value of *Account* column in *Charges* list described below is copied from, not referencing to, the *Title* column of *Accounts* list, so the account name change will not propagate to *Charges* list.
@@ -130,7 +132,14 @@ Item level proration is supported through the *Prorated* list column. If this fi
 The gem of *BillEase* is the console application *Invoice Run.exe*. It provides automation and turns the five SharePoint lists into a workable solution. Without it the SharePoint lists are merely data repository. Each run of *Invoice Run.exe* affects one billing cycle. *Invoice Run.exe* is intended to be launched by one or more scheduled tasks on folllowing occassions:
 
 * At the close of each billing cycle to process all consumptions for the closing billing cycle. In this case set option *is_cycle_open* to *false*, or leave unset since *false* is the default. This is a mandatory occassion so there must be a scheduled task created for this purpose.
-* Periodically, say hourly, to process consumptions for the current open billing cycle. In this case set option *is_cycle_open* to true. This is an optional occassion. If a scheduled task is created for this occassion, then user will be able to see charges in current open billing cycle. Updates and deletions to fixed consumptions and consumptions will be reflected in consumptions and charges respectively.
+* Periodically, say hourly, to process consumptions for the current open billing cycle. In this case set option *is_cycle_open* to true. This is an optional occassion. If a scheduled task is created for this occassion, then user will be able to see charges in the current open billing cycle. Updates and deletions to fixed consumptions and consumptions will be reflected in consumptions and charges respectively.  
+
+If you enable the second optional occassion, then typically there are 3 scheduled tasks of *Invoice Run.exe* in production. For example, assuming billing cycle is monthly by calendar month and billing cycle closes at the end of 7th day of each month so that service personnel has 7 extended days (day 1-7 of each month) to do meter reading for previous billing cycle. The scheduled tasks would be:
+
+1. hourly all the time for current open billing cycle
+2. hourly on the first 7 days of each month for previous open billing cycle
+3. once at 12am on the 8th day of each month for closing previous billing cycle
+
 
 When invoked, *Invoice Run.exe* performs following tasks:
 
@@ -143,91 +152,98 @@ When invoked, *Invoice Run.exe* performs following tasks:
 7. For each charge item in affected billing cycle, grant group *"&lt;prefix&gt;&lt;account&gt;"* read-only access if not already done so.
 
 *Invoice Run.exe* expects following call syntax:
+
 ```
 "Invoice Run.exe" [options] <URL>
-where <URL> points to the site holding the five lists and [options] are
--p|--prefix_of_group=<string>
-	Prefix of the account groups. The prefix is useful to 
-    prevent group name conflicts with other groups defined in same site collection
--b|--billing_period=<string>
-	Billing period in the form <Integer><UOM>. Default to 1m. Allowed UOMs are 
-	<d|m|y> for day, month and year respectively. For example, 1m for 1 month; 
-	14d for 2 weeks; 3m for a quarter.
--d|--cycle_calibration_date=<date>
-	Billing cycle calibration date in the format YYYY-MM-DD. This is a past date 
-	that is known to be the start of a billing cycle. Default value is the first day
-	of the current month the program is running.
--o|--offset_of_cycle=<number>
-	Offset of billing cycle. Default to -1. For example, 
-	if billing cycle starts on the first day of each month and Invoice Run 
-	is launched at 12:01AM on the first day of each month, the default offset 
-	of -1 is needed for calculation be performed on last month's data.
--a|--accounts_list_name=<string>
+```
+where \<URL> points to the site holding the five lists and [options] are
+
+* -p|--prefix_of_group=\<string>
+	
+	Prefix of the account groups. The prefix is useful to prevent group name conflicts with other groups defined in same site collection
+* -b|--billing_period=\<string>
+	
+	Billing period in the form \<Integer>\<UOM>. Default to 1m. Allowed UOMs are \<d|m|y> for day, month and year respectively. For example, 1m for 1 month; 14d for 2 weeks; 3m for a quarter.
+* -d|--cycle_calibration_date=\<date>
+	
+	Billing cycle calibration date in the format YYYY-MM-DD. This is a past date that is known to be the start of a billing cycle. Default value is the first day of the current month the program is running.
+* -o|--offset_of_cycle=\<number>
+
+	Offset of billing cycle. Default to -1. For example, if billing cycle starts on the first day of each month and Invoice Run is launched at 12:01AM on the first day of each month, the default offset of -1 is needed for calculation be performed on last month's data.
+* -a|--accounts_list_name=\<string>
+
 	Name of accounts list if renamed.
--r|--rates_list_name=<string>
+* -r|--rates_list_name=\<string>
+
 	Name of rates list if renamed.
--f|--fixed_consumptions_list_name=<string>
+* -f|--fixed_consumptions_list_name=\<string>
+
 	Name of fixed consumptions list if renamed.
--c|--consumptions_list_name=<string>
+* -c|--consumptions_list_name=\<string>
+
 	Name of consumptions list if renamed.
--h|--charges_list_name=<string>
+* -h|--charges_list_name=\<string>
+
 	Name of charges list if renamed.
--A|--account_columns_to_copy=<string>
-	Name of custom column in accounts list to copy over to charges list in the format 
-	<source_name>[:<target_name>]. Target name can be omitted if same as source name.
-	The column name is not display name, but rather internal field name which you can find in the 
-	Field url query parameter when opening the column definition in list settings.
-	Multiple columns can be defined by adding this option multiple times. The column type
-	in both accounts and charges lists must match. If a column is also copied from rate or
-	consumption list, the precedence of overriding in descending order is: consumption, rate, 
-	account.
--R|--rate_columns_to_copy=<string>
-	Name of custom column in rates list to copy over to charges list in the format <source_name>
-	[:<target_name>]. Target name can be omitted if same as source name. 
-	The column name is not display name, but rather internal field name which you can find in the 
-	Field url query parameter when opening the column definition in list settings.
-	Multiple columns can be	defined by adding this option multiple times. The column type	in both
-	rates and charges lists	must match. If a column is also copied from account or consumption list, 
-	the precedence of overriding in descending order is: consumption, rate,	account.
--C|--consumption_columns_to_copy=<string>
-	Name of custom column in consumptions list to copy over to charges list in the format 
-	<source_name>[:<target_name>]. Target name can be omitted if same as source name. 
-	The column name is not display name, but rather internal field name which you can find in the 
-	Field url query parameter when opening the column definition in list settings.
-	Multiple columns can be defined by adding this option multiple times. The column type
-	in both consumptions and charges lists must match. If a column is also copied from account or
-	rate list, the precedence of overriding in descending order is: consumption, rate, account.
--O|--is_cycle_open=<true|false>
-	Whether the billing cycle under operation is open or not. If not, then all 
-	consumptions that have been posted to charges are frozen from updates by contributors. 
-	This option tentatively has no effect. Default to false.
-i|--incremental=<true|false>
-	Whether or not update charges incrementally. If incremental, only consumptions modified 
-	since last run will be fetched. By default, incremental is true if billing cycle 
-	is open and false if closed.
--l|--last_run_log_file_name=<string>
-	Name of last run log file name. Default to billease_last_run.log. If there are multiple 
-	scheduled tasks created to run the console application and all scheduled tasks are set 
-	to the same working directory, then each should have its own last run log file by 
-	supplying a different name for this option.
+* -A|--account_columns_to_copy=\<string>
+
+	Name of custom column in accounts list to copy over to charges list in the format \<source_name>[:\<target_name>]. Target name can be omitted if same as source name. The column name is not display name, but rather internal field name which you can find in the Field url query parameter when opening the column definition in list settings. Multiple columns can be defined by adding this option multiple times. The column type in both accounts and charges lists must match. If a column is also copied from rate or 	consumption list, the precedence of overriding in descending order is: consumption, rate, account.
+* -R|--rate_columns_to_copy=\<string>
+
+	Name of custom column in rates list to copy over to charges list in the format \<source_name>[:\<target_name>]. Target name can be omitted if same as source name. The column name is not display name, but rather internal field name which you can find in the Field url query parameter when opening the column definition in list settings. Multiple columns can be	defined by adding this option multiple times. The column type	in both rates and charges lists	must match. If a column is also copied from account or consumption list, the precedence of overriding in descending order is: consumption, rate, account.
+* -C|--consumption_columns_to_copy=\<string>
+
+	Name of custom column in consumptions list to copy over to charges list in the format \<source_name>[:\<target_name>]. Target name can be omitted if same as source name. The column name is not display name, but rather internal field name which you can find in the Field url query parameter when opening the column definition in list settings. Multiple columns can be defined by adding this option multiple times. The column type in both consumptions and charges lists must match. If a column is also copied from account or rate list, the precedence of overriding in descending order is: consumption, rate, account.
+* -O|--is_cycle_open=\<true|false>
+
+	Whether the billing cycle under operation is open or not. If not, then all consumptions that have been posted to charges are frozen from updates by contributors. This option tentatively has no effect. Default to false.
+* -i|--incremental=\<true|false>
+
+	Whether or not update charges incrementally. If incremental, only consumptions modified since last run will be fetched. By default, incremental is true if billing cycle is open and false if closed.
+* -l|--last_run_log_file_name=\<string>
+
+	Name of last run log file name. Default to billease_last_run.log. If there are multiple scheduled tasks created to run the console application and all scheduled tasks are set to the same working directory, then each should have its own last run log file by supplying a different name for this option.
+* -s|--auth_scheme=\<ntlm|adfs>
+
+	Authentication scheme. Default to ntlm if absent.
+* -S|--adfs_server=\<string>
+
+	ADFS server such as sts3.mycorp.com. No default value. Required if auth_scheme is adfs.
+* -P|--relying_party=\<string>
+
+	ADFS relying party such as urn:sp.mycorp.com. No default value. Required if auth_scheme is adfs. To find out relying party, inspect the http request to ADFS server by opening the browser web debug console. Look for the wtrealm query string parameter as shown
+	
+	![wtrealm](./wtrealm.png)
+* -u|--username=\<string>
+
+	ADFS login user name. No default value. Required if auth_scheme is adfs. The account  should have adequate privilege to modify Sharepoint list items and permissions. Make the account a site collection administrator is recommended.
+* -D|--domain=\<string>
+
+	ADFS login user domain. No default value. Required if auth_scheme is adfs.
+* -w|--password=\<string>
+
+	ADFS login user password. No default value. Required if auth_scheme is adfs.
 
 Examples:
-"Invoice Run.exe" -p "Billing Group - " https://mycorp.com/service/billing
-  Set the prefix of all SharePoint groups used to grant clients accessing 
-  the Charges table to "Billing Group - ". Client users from account 
-  Marketing, for example, should be placed in a SharePoint group 
-  called "Billing Group - Marketing" 
-"Invoice Run.exe" -o 0 https://mycorp.com/service/billing
-  Set the offset of billing cycle month adjustment to 0. This is needed if billing 
-  cycle starts on the first day of each month and Invoice Run is launched at
-  11:50PM on the last day of each month, for example.
-"Invoice Run.exe" -c Comments -c ServiceDate:Service_x0020_Date https://mycorp.com/service/billing
-  When creating charges items, copy Comments and ServiceDate columns in consumptons 
-  list over to Comments and Service_x0020_Date columns respectively in charges list.
-```
+
+* "Invoice Run.exe" -p "Billing Group - " https://mycorp.com/service/billing
+
+  Set the prefix of all SharePoint groups used to grant clients accessing the Charges table to "Billing Group - ". Client users from account Marketing, for example, should be placed in a SharePoint group called "Billing Group - Marketing" 
+* "Invoice Run.exe" -o 0 https://mycorp.com/service/billing
+
+  Set the offset of billing cycle month adjustment to 0. This is needed if billing cycle starts on the first day of each month and Invoice Run is launched at 11:50PM on the last day of each month, for example.
+* "Invoice Run.exe" -c Comments -c ServiceDate:Service_x0020_Date https://mycorp.com/service/billing
+
+  When creating charges items, copy Comments and ServiceDate columns in consumptons list over to Comments and Service_x0020_Date columns respectively in charges list.
+* "Invoice Run.exe" -s adfs -S sts3.mycorp.com -P urn:sp.mycorp.com -u foo -D mycorp -w changeMe https://mycorp.com/service/billing
+  
+  Authenticate to Sharepoint with ADFS
+
+  When creating charges items, copy Comments and ServiceDate columns in consumptons list over to Comments and Service_x0020_Date columns respectively in charges list.
+
 ## System Requirements and Access Privileges
-* Site collection administrator level of access to any edition of SharePoint 2010 or 2013 with integrated Windows authentication.
-* Local administrator access to a server with .Net Framework 4 installed to run scheduled tasks. The server doesn't need to be the host of the SharePoint site. Windows Server 2008 R2 has been tested working.
+* Site collection administrator level of access to any edition of SharePoint 2010 or above.
+* Local administrator access to a server with .Net Framework 4.5 installed to run scheduled tasks. The server doesn't need to be the host of the SharePoint site. Windows Server 2008 R2 has been tested working.
 * Optionally Git client to download package
 * Optionally Visual Studio 2017 if you want to compile or change source code of  *Invoice Run.exe*
 
@@ -238,8 +254,8 @@ Examples:
 4. Define permissions of each list appropriately. Users from service provider organization, depending on job roles, should have read-only permission to *Charges* and read-write permission to *Accounts*, *Rates* and *Consumptions*. Don't grant any permission to clients at list level.
 5. Follow manual processes in [Overview](#overview) section to populate lists and SharePoint groups. Create some fake data in *Consumptions* list in order to verify the function.
 6. Copy all files under */Invoice Run/bin/Debug* to a server where *Invoice Run* scheduled task will be created. The server must have .Net Framework 4 installed. 
-7. Manually run *Invoice Run.exe* on the server with URL of the site created in Step 3. above and optional arguments documented in the [Console Application](#console-application) section above. The Windows log in account should be a site collection administrator as well as a local server administrator. If you run from a desktop version of Windows such as Vista with UAC, you have to run *Invoice Run.exe* from a DOS prompt started with "Run as administrator". If the run is successful, you should see new items created in *Charges* list with unique permissions. If the run fails, errors are output to both console and Windows event log.
-8. Create a scheduled task to run *Invoice Run.exe* periodically. The account used to run the scheduled task should have adequate privilege to modify list items and permissions. Make the account a site collection administrator is recommended.
+7. Manually run *Invoice Run.exe* on the server with URL of the site created in Step 3. above and optional arguments documented in the [Console Application](#console-application) section above. The Windows login account should be a local server administrator. If Sharepoint is ntlm authenticated, then the Windows login acount should also have  adequate privilege to modify Sharepoint list items and permissions. Make the account a site collection administrator is recommended.  If you run from a desktop version of Windows such as Vista with UAC, you have to run *Invoice Run.exe* from a DOS prompt started with "Run as administrator". If the run is successful, you should see new items created in *Charges* list with unique permissions. If the run fails, errors are output to both console and Windows event log.
+8. Create a scheduled task to run *Invoice Run.exe* periodically. The Windows account used to run the scheduled task should be a local administrator. If Sharepoint is ntlm authenticated, the account should also have adequate privilege to modify Sharepoint list items and permissions. Make the account a site collection administrator is recommended.
 
 ## License
 

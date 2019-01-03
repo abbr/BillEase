@@ -17,6 +17,7 @@ namespace Invoice_Run
 {
   class Program
   {
+    enum AuthScheme { ntlm, adfs };
     const string evtLogSrc = "BillEase";
     static void Main(string[] args)
     {
@@ -38,6 +39,13 @@ namespace Invoice_Run
         string billingPeriodStr = "1m";
         bool isCycleOpen = false;
         bool? incremental = null;
+        var authScheme = AuthScheme.ntlm;
+        string adfsServer = null;
+        string relyingParty = null;
+        string userName = null;
+        string domain = null;
+        string pwd = null;
+
         string lastRunFileName = "billease_last_run.log";
         DateTime cycleCalibrationDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1, 0, 0, 0, DateTimeKind.Local);
 
@@ -87,6 +95,12 @@ namespace Invoice_Run
                     ,{"O|is_cycle_open=", v=> isCycleOpen = Convert.ToBoolean(v)}
                     ,{"i|incremental=", v=> incremental = Convert.ToBoolean(v)}
                     ,{"l|last_run_log_file_name=", v=> lastRunFileName = v}
+                    ,{"s|auth_scheme=", v=> authScheme = (AuthScheme) Enum.Parse(typeof(AuthScheme), v)}
+                    ,{"S|adfs_server=", v=> adfsServer = v}
+                    ,{"P|relying_party=", v=> relyingParty = v}
+                    ,{"u|username=", v=> userName = v}
+                    ,{"D|domain=", v=> domain = v}
+                    ,{"w|password=", v=> pwd = v}
                 };
         List<String> extraArgs = options.Parse(args);
         if (incremental == null)
@@ -94,8 +108,22 @@ namespace Invoice_Run
           incremental = isCycleOpen;
         }
         ServicePointManager.ServerCertificateValidationCallback = MyCertHandler;
-        var cc = new ClientContext(extraArgs[0]);
-        cc.Credentials = System.Net.CredentialCache.DefaultCredentials;
+        ClientContext cc = null;
+        switch (authScheme)
+        {
+          case AuthScheme.ntlm:
+            {
+              cc = new ClientContext(extraArgs[0]);
+              cc.Credentials = System.Net.CredentialCache.DefaultCredentials;
+              break;
+            }
+          case AuthScheme.adfs:
+            {
+              OfficeDevPnP.Core.AuthenticationManager am = new OfficeDevPnP.Core.AuthenticationManager();
+              cc = am.GetADFSUserNameMixedAuthenticatedContext(extraArgs[0], userName, pwd, domain, adfsServer, relyingParty);
+              break;
+            }
+        }
 
         Match billingPeriodMatch = Regex.Match(billingPeriodStr, @"(\d)([mdy])");
         int billingPeriod = 0;

@@ -647,7 +647,7 @@ namespace Invoice_Run
           }
         }
 
-        var chargesLst = cc.Web.Lists.GetByTitle("Charges");
+        var chargesLst = cc.Web.Lists.GetByTitle(chargesLstNm);
         var chargesLIC = chargesLst.GetItems(query);
         cc.Load(chargesLIC, items => items.Include(
             item => item["Account"]

@@ -88,7 +88,9 @@ Changing *Unit Price* or *Denominator* only affects future charge calculations. 
   * Quantity - consumption data. UOM should match that of rate referenced
   * Cycle - the  start of billing cycle. The first day of current month is populated by default.
   * Amount - used to override calculated amount. This column is useful to post one-off type of charges or credits. When this column is populated, *Quantity* doesn't need to be populated. Even if *Quantity* is populated, the quantity will not be used.
-  * Fixed Consumption Ref - if the consumption item is auto-populated from *Fixed Consumptions* by *Invoice Run.exe*, this hidden field contains a reference to the corrseponding fixed consumption item.
+  * Fixed Consumption Ref - if the consumption item is auto-populated from *Fixed Consumptions* by *Invoice Run.exe*, this hidden field contains a reference to the *Title* field of the corrseponding fixed consumption item.
+  * Fixed Consumption Ref:Service Start - if the consumption item is auto-populated from *Fixed Consumptions* by *Invoice Run.exe*, this hidden field contains a reference to the *Service Start* field of the corrseponding fixed consumption item. 
+  * Fixed Consumption Ref:Service End - if the consumption item is auto-populated from *Fixed Consumptions* by *Invoice Run.exe*, this hidden field contains a reference to the *Service End* field of the corrseponding fixed consumption item. 
 
 Consumption items are modifiable by users with *Contribute* permission of the list prior to the closing date of billing cycle and read-only thereafter. Consumption items are also modifiable by administrators any time. Deleting a consumption item of a closed billing cycle is disallowed unless the corresponding charge item is deleted.
  
@@ -109,15 +111,21 @@ Notice that except for the hidden *Consumption Ref* column, all columns are copi
 By the same record-preserving principle, charge line items should be made read-only, except for site collection administrators who have full access regardless of permissions. When a charge item is created, the permission of the item is broken from inheritance. Users who have read permissions defined in the *Charges* list at the time of broken can still read the item. In addition, users who belong to the *"&lt;prefix&gt;&lt;account&gt;"* group are also granted read-only access. This makes the list security-trimmed and suitable to be exposed as a portal page to clients who can only see the charges applied to their account.
 
 #### Fixed Consumptions
-*Fixed Consumptions* list is a worksheet used to define consumptions of pre-determined quantities in a set-it-and-forget-it manner. The columns in this list generally match *Consumptions* list except for following extra columns
-* Service Start - optional start date of the service
-* Service End - optional end date of the service
-* Prorated - whether or not to prorate Quantity and Amount during the billing cycles that cover the start or end of service period. Allowed values are
-  * No
-  * Yes
-  * Yes and round quantity to integer
-  
-  Default to *No*.
+*Fixed Consumptions* list is a worksheet used to define consumptions of pre-determined quantities in a set-it-and-forget-it manner. The columns in this list generally match *Consumptions* list except for
+* removed columns
+	* Cycle
+	* Fixed Consumption Ref
+	* Fixed Consumption Ref:Service Start
+	* Fixed Consumption Ref:Service End
+* added columns
+	* Service Start - optional start date of the service
+	* Service End - optional end date of the service
+	* Prorated - whether or not to prorate Quantity and Amount during the billing cycles that cover the start or end of service period. Allowed values are
+	  * No
+	  * Yes
+	  * Yes and round quantity to integer
+	  
+	  Default to *No*.
 
 When *Invoice Run.exe* is executed, a new consumption item is generated for every fixed consumption item with service period  \[<*Service Start*>, <*Service End*>) overlapping the billing cycle by copying columns exist in both lists. Note *Service Start* is inclusive and *Service End* is exclusive. Missing *Service Start* implies a distant past; missing *Service End* implies a distant future. 
 
@@ -125,6 +133,8 @@ When *Invoice Run.exe* is executed, a new consumption item is generated for ever
 
 * *Cycle* is set to billing cycle start date. 
 * *Fixed Consumption Ref* is set to a reference to the fixed consumption item. *Invoice Run.exe* relies on this column to avoid generating multiple consumption items in the same billing cycle in case *Invoice Run.exe* has to be executed repetitively.
+* *Fixed Consumption Ref:Service Start* is set to a reference to the *Service Start* field of the fixed consumption item. *Invoice Run.exe* relies on this column to delete consumptions items when *Service Start* field of the corresponding fixed consumption item has been modified to be later than the cycle end date.
+* *Fixed Consumption Ref:Service End* is set to a reference to the *Service End* field of the fixed consumption item. *Invoice Run.exe* relies on this column to delete consumptions items when *Service End* field of the corresponding fixed consumption item has been modified to be earlier than the cycle start date.
 
 Item level proration is supported through the *Prorated* list column. If this field is set to *Yes* or *Yes and round quantity to integer*, then the Quantity and Amount fields are prorated by day in the billing cycles that cover the service start or end date. For example, if the service start date is 2018-02-01 and service end date is empty, assuming billing period is quarterly starting January 1 annually, then for the billing cycle 2018-01-01 to 2018-03-31, Quantity and Amount fields are adjusted by a proration factor of 59/90≈0.66 when posting to the *Consumptions* list. Furthermore, if the field is set to *Yes and round quantity to integer*, then prorated *Quantity* field is rounded to integer. This allows *Quantity* field to be set correctly to accomodate the fact that months have different number of days. In the above example, if *Quantity* field is 3 (reasonable because rate can be priced as per month and there are 3 months in a quarter), then the rounded prorated quantity will be 2, as opposed to 1.966666666666667 had rounding not been performed.
 
@@ -143,13 +153,14 @@ If you enable the second optional occassion, then typically there are 3 schedule
 
 When invoked, *Invoice Run.exe* performs following tasks:
 
-1. Delete consumptions associated with deleted fixed consumptions.
-2. Delete charges associated with deleted consumptions.
-3. For each fixed consumption item with service period overlapping the affected billing period, either create a new or update an existing consumption item.
-4. For each consumption item in affected billing cycle, either create a new or update an existing charge item. The values of charge item are copied or calculated using data directly or indirectly obtained from consumption item as described in [Charges](#charges) list above. If option *incremental* is true, then only consumption items modified since last run in affected billing cycle are included.
-5. If the billing cycle is closed, then break the permission inheritance of each consumption item in affected billing cycle if not already done so. Then convert all *Contribute* permissions to *Read*.
-6. Break the permission inheritance of each charge item created in affected billing cycle if not already done so. 
-7. For each charge item in affected billing cycle, grant group *"&lt;prefix&gt;&lt;account&gt;"* read-only access if not already done so.
+1. If cycle is closed and *delete_ended_fixed_consumptions* option is set to *true*, then all ended (i.e. *Service End* &lt; *Cycle*) fixed consumptions are deleted.
+2. Delete consumptions associated with deleted or out-of-range (i.e. *Service Start* &gt; cycle end or *Service End* &lt; cycle start) fixed consumptions.
+3. Delete charges associated with deleted consumptions.
+4. For each fixed consumption item with service period overlapping the affected billing period, either create a new or update an existing consumption item.
+5. For each consumption item in affected billing cycle, either create a new or update an existing charge item. The values of charge item are copied or calculated using data directly or indirectly obtained from consumption item as described in [Charges](#charges) list above. If option *incremental* is true, then only consumption items modified since last run in affected billing cycle are included.
+6. If the billing cycle is closed, then break the permission inheritance of each consumption item in affected billing cycle if not already done so. Then convert all *Contribute* permissions to *Read*.
+7. Break the permission inheritance of each charge item created in affected billing cycle if not already done so. 
+8. For each charge item in affected billing cycle, grant group *"&lt;prefix&gt;&lt;account&gt;"* read-only access if not already done so.
 
 *Invoice Run.exe* expects following call syntax:
 
@@ -196,7 +207,7 @@ where \<URL> points to the site holding the five lists and [options] are
 	Name of custom column in consumptions list to copy over to charges list in the format \<source_name>[:\<target_name>]. Target name can be omitted if same as source name. The column name is not display name, but rather internal field name which you can find in the Field url query parameter when opening the column definition in list settings. Multiple columns can be defined by adding this option multiple times. The column type in both consumptions and charges lists must match. If a column is also copied from account or rate list, the precedence of overriding in descending order is: consumption, rate, account.
 * -O|--is_cycle_open=\<true|false>
 
-	Whether the billing cycle under operation is open or not. If not, then all consumptions that have been posted to charges are frozen from updates by contributors. This option tentatively has no effect. Default to false.
+	Whether the billing cycle under operation is open or not. If not, then, among other things, all consumptions that have been posted to charges are frozen from updates by contributors. Default to false.
 * -i|--incremental=\<true|false>
 
 	Whether or not update charges incrementally. If incremental, only consumptions modified since last run will be fetched. By default, incremental is true if billing cycle is open and false if closed.
@@ -216,13 +227,16 @@ where \<URL> points to the site holding the five lists and [options] are
 	![wtrealm](./wtrealm.png)
 * -u|--username=\<string>
 
-	ADFS login user name. No default value. Required if auth_scheme is adfs. The account  should have adequate privilege to modify Sharepoint list items and permissions. Make the account a site collection administrator is recommended.
+	Login user name. No default value. Required if auth_scheme is adfs. If auth_scheme is ntlm and if this option is not set, then the Windows account running the program will be used for login to SharePoint. The login account should have adequate privilege to modify Sharepoint list items and permissions. Make the account a site collection administrator is recommended.
 * -D|--domain=\<string>
 
-	ADFS login user domain. No default value. Required if auth_scheme is adfs.
+	Login user domain. No default value. Required if auth_scheme is adfs. If auth_scheme is ntlm and if this option is not set, then the Windows account running the program will be used for login to SharePoint.
 * -w|--password=\<string>
 
-	ADFS login user password. No default value. Required if auth_scheme is adfs.
+	Login user password. No default value. Required if auth_scheme is adfs. If auth_scheme is ntlm and if this option is not set, then the Windows account running the program will be used for login to SharePoint.
+* -x|--delete_ended_fixed_consumptions=\<true|false\>
+
+  Whether or not delete ended (i.e. *Service End* &lt; *Cycle*) fixed consumptions when the cycle is closed. Default to false.
 
 Examples:
 
@@ -239,23 +253,21 @@ Examples:
   
   Authenticate to Sharepoint with ADFS
 
-  When creating charges items, copy Comments and ServiceDate columns in consumptons list over to Comments and Service_x0020_Date columns respectively in charges list.
-
 ## System Requirements and Access Privileges
-* Site collection administrator level of access to any edition of SharePoint 2010 or above.
+* Site collection administrator level of access to any edition of SharePoint 2013 or above.
 * Local administrator access to a server with .Net Framework 4.5 installed to run scheduled tasks. The server doesn't need to be the host of the SharePoint site. Windows Server 2008 R2 has been tested working.
 * Optionally Git client to download package
 * Optionally Visual Studio 2017 if you want to compile or change source code of  *Invoice Run.exe*
 
 ## Installation
 1. Use *Download Zip* button to download the latest version, or use Git client to clone the git repo. 
-2.  Upload file *Service Billing.wsp* to SharePoint site collection solution gallery and activate it. 
+2.  Upload file *Sharepoint Solutions\SharePoint 2016\Service Billing.wsp* to SharePoint site collection solution gallery and activate it. 
 3. Create a site using *Service Billing* site template contained in *Service Billing.wsp*. You may need to active certain site collection features first.
 4. Define permissions of each list appropriately. Users from service provider organization, depending on job roles, should have read-only permission to *Charges* and read-write permission to *Accounts*, *Rates* and *Consumptions*. Don't grant any permission to clients at list level.
 5. Follow manual processes in [Overview](#overview) section to populate lists and SharePoint groups. Create some fake data in *Consumptions* list in order to verify the function.
 6. Copy all files under */Invoice Run/bin/Debug* to a server where *Invoice Run* scheduled task will be created. The server must have .Net Framework 4 installed. 
-7. Manually run *Invoice Run.exe* on the server with URL of the site created in Step 3. above and optional arguments documented in the [Console Application](#console-application) section above. The Windows login account should be a local server administrator. If Sharepoint is ntlm authenticated, then the Windows login acount should also have  adequate privilege to modify Sharepoint list items and permissions. Make the account a site collection administrator is recommended.  If you run from a desktop version of Windows such as Vista with UAC, you have to run *Invoice Run.exe* from a DOS prompt started with "Run as administrator". If the run is successful, you should see new items created in *Charges* list with unique permissions. If the run fails, errors are output to both console and Windows event log.
-8. Create a scheduled task to run *Invoice Run.exe* periodically. The Windows account used to run the scheduled task should be a local administrator. If Sharepoint is ntlm authenticated, the account should also have adequate privilege to modify Sharepoint list items and permissions. Make the account a site collection administrator is recommended.
+7. Manually run *Invoice Run.exe* on the server with URL of the site created in Step 3. above and optional arguments documented in the [Console Application](#console-application) section above. The Windows login account should be a local server administrator. If Sharepoint is ntlm authenticated and no username, domain or password provided in input parameter, then the Windows login acount will be used to login to SharePoint. The account therefore should also have  adequate privilege to modify Sharepoint list items and permissions. Make the account a site collection administrator is recommended.  If you run from a desktop version of Windows such as Vista with UAC, you have to run *Invoice Run.exe* from a DOS prompt started with "Run as administrator". If the run is successful, you should see new items created in *Charges* list with unique permissions. If the run fails, errors are output to both console and Windows event log.
+8. Create a scheduled task to run *Invoice Run.exe* periodically. The Windows account used to run the scheduled task should be a local administrator. If Sharepoint is ntlm authenticated and no username, domain or password provided in input parameter, then the Windows login acount will be used to login to SharePoint. The account therefore should also have adequate privilege to modify Sharepoint list items and permissions. Make the account a site collection administrator is recommended.
 
 ## License
 

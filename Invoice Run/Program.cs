@@ -28,7 +28,7 @@ namespace Invoice_Run
       try
       {
         var runStartTime = DateTime.Now;
-        EventLog.WriteEntry(evtLogSrc, string.Format("Run started {0}.", runStartTime.ToString()), EventLogEntryType.Information);
+        EventLog.WriteEntry(evtLogSrc, $"Run started {runStartTime}.", EventLogEntryType.Information);
         string groupPrefix = "";
         int cycleOffset = -1;
         string accountsLstNm = "Accounts";
@@ -45,7 +45,7 @@ namespace Invoice_Run
         string userName = null;
         string domain = null;
         string pwd = null;
-
+        bool deleteEndedFixedConsumptions = false;
         string lastRunFileName = "billease_last_run.log";
         DateTime cycleCalibrationDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1, 0, 0, 0, DateTimeKind.Local);
 
@@ -101,6 +101,7 @@ namespace Invoice_Run
                     ,{"u|username=", v=> userName = v}
                     ,{"D|domain=", v=> domain = v}
                     ,{"w|password=", v=> pwd = v}
+                    ,{"x|delete_ended_fixed_consumptions=", v=> deleteEndedFixedConsumptions = Convert.ToBoolean(v)}
                 };
         List<String> extraArgs = options.Parse(args);
         if (incremental == null)
@@ -113,8 +114,16 @@ namespace Invoice_Run
         {
           case AuthScheme.ntlm:
             {
-              cc = new ClientContext(extraArgs[0]);
-              cc.Credentials = System.Net.CredentialCache.DefaultCredentials;
+              if (userName != null && pwd != null && domain != null)
+              {
+                OfficeDevPnP.Core.AuthenticationManager am = new OfficeDevPnP.Core.AuthenticationManager();
+                cc = am.GetNetworkCredentialAuthenticatedContext(extraArgs[0], userName, pwd, domain);
+              }
+              else
+              {
+                cc = new ClientContext(extraArgs[0]);
+                cc.Credentials = System.Net.CredentialCache.DefaultCredentials;
+              }
               break;
             }
           case AuthScheme.adfs:
@@ -180,28 +189,85 @@ namespace Invoice_Run
         {
         }
 
-
-        // delete consumptions associated with deleted fixed consumptions
         var query = new CamlQuery();
-        query.ViewXml = string.Format(@"<View><Query>
+
+        // deleted ended fixed consumptions if cycle is closed
+        try
+        {
+          if (deleteEndedFixedConsumptions && !isCycleOpen)
+          {
+            query.ViewXml = $@"<View><Query>
    <Where>
+    <Lt>
+        <FieldRef Name='Service_x0020_End' />
+        <Value Type=”DateTime”>{billingCycleStart.ToString("yyyy-MM-dd")}</Value>
+    </Lt>
+   </Where>
+</Query></View>";
+            var fixedConsumptionLst = cc.Web.Lists.GetByTitle(fixedConsumptionsLstNm);
+            var fixedConsumptionDeletionLIC = fixedConsumptionLst.GetItems(query);
+            cc.Load(fixedConsumptionDeletionLIC);
+            cc.ExecuteQuery();
+            while (fixedConsumptionDeletionLIC.Count > 0)
+            {
+              ListItem fixedConsumptionLI = null;
+              try
+              {
+                fixedConsumptionLI = fixedConsumptionDeletionLIC[0];
+                fixedConsumptionLI.DeleteObject();
+                cc.ExecuteQuery();
+
+              }
+              catch (Exception ex)
+              {
+                EventLog.WriteEntry(evtLogSrc,
+                  $@"Error delete ended fixed consumption with id {fixedConsumptionLI["ID"]}.
+{ex}"
+                  , EventLogEntryType.Error);
+              }
+            }
+          }
+        }
+        catch (Exception ex)
+        {
+          EventLog.WriteEntry(evtLogSrc, $@"Error delete ended fixed consumptions.
+{ex}", EventLogEntryType.Error);
+        }
+
+        // delete consumptions associated with 
+        // deleted or ended fixed consumptions
+        query.ViewXml = $@"
+<View><Query>
+  <Where>
     <And>
       <Eq>
           <FieldRef Name='Cycle' />
-          <Value Type='DateTime'>{0}</Value>
+          <Value Type='DateTime'>{billingCycleStart.ToString("yyyy-MM-dd")}</Value>
       </Eq>
-      <And>
-        <IsNull>
-           <FieldRef Name='Fixed_x0020_Consumption_x0020_Re' />
-        </IsNull>
-        <Geq>
-           <FieldRef Name='Fixed_x0020_Consumption_x0020_Re' LookupId='TRUE' />
-           <Value Type=”Lookup”>0</Value>
-        </Geq>
-      </And>
+      <Or>
+        <Or>
+          <Geq>
+              <FieldRef Name='Fixed_x0020_Consumption_x0020_Re0' />
+              <Value Type=”DateTime”>{nextBillingcycleStart.ToString("yyyy-MM-dd")}</Value>
+          </Geq>
+          <Lt>
+              <FieldRef Name='Fixed_x0020_Consumption_x0020_Re1' />
+              <Value Type=”DateTime”>{billingCycleStart.ToString("yyyy-MM-dd")}</Value>
+          </Lt>
+        </Or>
+        <And>
+          <IsNull>
+              <FieldRef Name='Fixed_x0020_Consumption_x0020_Re' />
+          </IsNull>
+          <Geq>
+              <FieldRef Name='Fixed_x0020_Consumption_x0020_Re' LookupId='TRUE' />
+              <Value Type=”Lookup”>0</Value>
+          </Geq>
+        </And>
+      </Or>
     </And>
-   </Where>
-</Query></View>", billingCycleStart.ToString("yyyy-MM-dd"));
+  </Where>
+</Query></View>";
         var consumptionLst = cc.Web.Lists.GetByTitle(consumptionsLstNm);
         var consumptionFC = consumptionLst.Fields;
         var consumptionDeletionLIC = consumptionLst.GetItems(query);
@@ -217,12 +283,12 @@ namespace Invoice_Run
 
         // delete charges associated with deleted consumptions
         query = new CamlQuery();
-        query.ViewXml = string.Format(@"<View><Query>
+        query.ViewXml = $@"<View><Query>
    <Where>
     <And>
       <Eq>
           <FieldRef Name='Cycle' />
-          <Value Type='DateTime'>{0}</Value>
+          <Value Type='DateTime'>{billingCycleStart.ToString("yyyy-MM-dd")}</Value>
       </Eq>
       <And>
         <IsNull>
@@ -235,7 +301,7 @@ namespace Invoice_Run
       </And>
     </And>
    </Where>
-</Query></View>", billingCycleStart.ToString("yyyy-MM-dd"));
+</Query></View>";
         var chgLst = cc.Web.Lists.GetByTitle(chargesLstNm);
         var chargesDeletionLIC = chgLst.GetItems(query);
         cc.Load(chargesDeletionLIC);
@@ -249,7 +315,7 @@ namespace Invoice_Run
 
         // populate or update consumptions from fixed consumptions
         query = new CamlQuery();
-        query.ViewXml = string.Format(@"
+        query.ViewXml = $@"
 <View><Query>
    <Where>
      <And>
@@ -259,7 +325,7 @@ namespace Invoice_Run
           </IsNull>
           <Lt>
              <FieldRef Name='Service_x0020_Start' />
-             <Value Type='DateTime'>{0}</Value>
+             <Value Type='DateTime'>{nextBillingcycleStart.ToString("yyyy - MM - dd")}</Value>
           </Lt>
         </Or>
         <Or>
@@ -268,12 +334,12 @@ namespace Invoice_Run
           </IsNull>
           <Gt>
              <FieldRef Name='Service_x0020_End' />
-             <Value Type='DateTime'>{1}</Value>
+             <Value Type='DateTime'>{billingCycleStart.ToString("yyyy-MM-dd")}</Value>
           </Gt>
         </Or>
      </And>
    </Where>
-</Query></View>", nextBillingcycleStart.ToString("yyyy-MM-dd"), billingCycleStart.ToString("yyyy-MM-dd"));
+</Query></View>";
         var fixedConsumptionsLst = cc.Web.Lists.GetByTitle(fixedConsumptionsLstNm);
         var fixedConsumptionLIC = fixedConsumptionsLst.GetItems(query);
         FieldCollection fixedConsumptionFC = fixedConsumptionsLst.Fields;
@@ -288,21 +354,21 @@ namespace Invoice_Run
             {
               // check if consumption exists for the current billing cycle
               var consumptionItemQuery = new CamlQuery();
-              consumptionItemQuery.ViewXml = string.Format(@"
+              consumptionItemQuery.ViewXml = $@"
 <View><Query>
    <Where>
     <And>
         <Eq>
             <FieldRef Name='Fixed_x0020_Consumption_x0020_Re' LookupId='TRUE' />
-            <Value Type='Lookup'>{0}</Value>
+            <Value Type='Lookup'>{fixedConsumptionLI["ID"]}</Value>
         </Eq>
         <Eq>
             <FieldRef Name='Cycle' />
-            <Value Type='DateTime'>{1}</Value>
+            <Value Type='DateTime'>{billingCycleStart.ToString("yyyy-MM-dd")}</Value>
         </Eq>
     </And>
    </Where>
-</Query></View>", fixedConsumptionLI["ID"], billingCycleStart.ToString("yyyy-MM-dd"));
+</Query></View>";
               var _consumptionLIC = consumptionLst.GetItems(consumptionItemQuery);
               cc.Load(_consumptionLIC);
               cc.ExecuteQuery();
@@ -373,7 +439,7 @@ namespace Invoice_Run
               }
               catch
               {
-                EventLog.WriteEntry(evtLogSrc, string.Format("Error calculating proration for fixed consumption with ID={0}", fixedConsumptionLI["ID"]), EventLogEntryType.Error);
+                EventLog.WriteEntry(evtLogSrc, $@"Error calculating proration for fixed consumption with ID={fixedConsumptionLI["ID"]}", EventLogEntryType.Error);
               }
 
               consumptionItem["Cycle"] = billingCycleStart;
@@ -385,13 +451,15 @@ namespace Invoice_Run
             }
             catch (Exception ex)
             {
-              EventLog.WriteEntry(evtLogSrc, string.Format("Error creating consumption from fixed consumption with ID {0}.\n{1}", (int)fixedConsumptionLI["ID"], ex.ToString()), EventLogEntryType.Error);
+              EventLog.WriteEntry(evtLogSrc, $@"Error creating consumption from fixed consumption with ID {fixedConsumptionLI["ID"]}.
+{ex}", EventLogEntryType.Error);
             }
           }
         }
         catch (Exception ex)
         {
-          EventLog.WriteEntry(evtLogSrc, string.Format("Error creating consumption from fixed consumption.\n{0}", ex.ToString()), EventLogEntryType.Error);
+          EventLog.WriteEntry(evtLogSrc, $@"Error creating consumption from fixed consumption.
+{ex}", EventLogEntryType.Error);
         }
 
         // set incremental to false if there are updated accounts or rates since last run, 
@@ -400,18 +468,18 @@ namespace Invoice_Run
           if (incremental != false)
           {
             query = new CamlQuery();
-            query.ViewXml = string.Format(@"
+            query.ViewXml = $@"
 <View>
   <Query>
     <Where>
       <Gt>
           <FieldRef Name='Modified' />
-          <Value IncludeTimeValue='true' Type='DateTime'>{0}</Value>
+          <Value IncludeTimeValue='true' Type='DateTime'>{lastRunTs.ToString("yyyy-MM-ddTHH:mm:ssZ")}</Value>
       </Gt>
     </Where>
   </Query>
   <RowLimit>1</RowLimit>
-</View>", lastRunTs.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+</View>";
             var lst = cc.Web.Lists.GetByTitle(lstNm);
             var lic = lst.GetItems(query);
             cc.Load(lic);
@@ -427,33 +495,33 @@ namespace Invoice_Run
         string viewXml = null;
         if (incremental == false)
         {
-          viewXml = string.Format(@"
+          viewXml = $@"
 <View><Query>
    <Where>
       <Eq>
          <FieldRef Name='Cycle' />
-         <Value Type='DateTime'>{0}</Value>
+         <Value Type='DateTime'>{billingCycleStart.ToString("yyyy-MM-dd")}</Value>
       </Eq>
    </Where>
-</Query></View>", billingCycleStart.ToString("yyyy-MM-dd"));
+</Query></View>";
         }
         else
         {
-          viewXml = string.Format(@"
+          viewXml = $@"
 <View><Query>
    <Where>
     <And>
       <Eq>
          <FieldRef Name='Cycle' />
-         <Value Type='DateTime'>{0}</Value>
+         <Value Type='DateTime'>{billingCycleStart.ToString("yyyy-MM-dd")}</Value>
       </Eq>
       <Gt>
          <FieldRef Name='Modified' />
-         <Value IncludeTimeValue='true' Type='DateTime'>{1}</Value>
+         <Value IncludeTimeValue='true' Type='DateTime'>{lastRunTs.ToString("yyyy-MM-ddTHH:mm:ssZ")}</Value>
       </Gt>
     </And>
    </Where>
-</Query></View>", billingCycleStart.ToString("yyyy-MM-dd"), lastRunTs.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+</Query></View>";
         }
         query.ViewXml = viewXml;
 
@@ -464,24 +532,33 @@ namespace Invoice_Run
         cc.Load(cc.Web.RoleDefinitions);
         var gc = cc.Web.SiteGroups;
         cc.Load(gc);
-        cc.ExecuteQuery();
-        var restReadRD = cc.Web.RoleDefinitions.GetByName("Restricted Read");
         var readRD = cc.Web.RoleDefinitions.GetByName("Read");
+        cc.ExecuteQuery();
+        RoleDefinition restReadRD;
+        try
+        {
+          restReadRD = cc.Web.RoleDefinitions.GetByName("Restricted Read");
+          cc.ExecuteQuery();
+        }
+        catch
+        {
+          restReadRD = null;
+        }
 
         foreach (var consumptionLI in consumptionLIC)
         {
           ListItem chgItem;
           // check if charges exists
           var chgItemQuery = new CamlQuery();
-          chgItemQuery.ViewXml = string.Format(@"
+          chgItemQuery.ViewXml = $@"
 <View><Query>
    <Where>
       <Eq>
          <FieldRef Name='Consumption_x0020_Ref' LookupId='TRUE' />
-         <Value Type='Lookup'>{0}</Value>
+         <Value Type='Lookup'>{consumptionLI["ID"]}</Value>
       </Eq>
    </Where>
-</Query></View>", consumptionLI["ID"]);
+</Query></View>";
           var chgLIC = chgLst.GetItems(chgItemQuery);
           cc.Load(chgLIC);
           cc.ExecuteQuery();
@@ -504,28 +581,28 @@ namespace Invoice_Run
 
           // get org item
           var orgItemQuery = new CamlQuery();
-          orgItemQuery.ViewXml = string.Format(@"
+          orgItemQuery.ViewXml = $@"
 <View><Query>
    <Where>
       <Eq>
          <FieldRef Name='ID' />
-         <Value Type='Counter'>{0}</Value>
+         <Value Type='Counter'>{((FieldLookupValue)consumptionLI["Account"]).LookupId}</Value>
       </Eq>
    </Where>
-</Query></View>", ((FieldLookupValue)consumptionLI["Account"]).LookupId);
+</Query></View>";
           var orgLst = cc.Web.Lists.GetByTitle(accountsLstNm);
           var orgLIC = orgLst.GetItems(orgItemQuery);
           cc.Load(orgLIC);
           // get rate item
           var rateItemQuery = new CamlQuery();
-          rateItemQuery.ViewXml = string.Format(@"<View><Query>
+          rateItemQuery.ViewXml = $@"<View><Query>
    <Where>
       <Eq>
          <FieldRef Name='ID' />
-         <Value Type='Counter'>{0}</Value>
+         <Value Type='Counter'>{((FieldLookupValue)consumptionLI["Rate"]).LookupId}</Value>
       </Eq>
    </Where>
-</Query></View>", ((FieldLookupValue)consumptionLI["Rate"]).LookupId);
+</Query></View>";
           var rateLst = cc.Web.Lists.GetByTitle(ratesLstNm);
           var rateLIC = rateLst.GetItems(rateItemQuery);
           cc.Load(rateLIC);
@@ -576,7 +653,7 @@ namespace Invoice_Run
               }
               catch
               {
-                EventLog.WriteEntry(evtLogSrc, string.Format(@"Cannot copy column {0} in list {1} for consumption ID={2}", columnNVP.Key, listColumnToCopy.Key, consumptionLI["ID"]), EventLogEntryType.Error);
+                EventLog.WriteEntry(evtLogSrc, $@"Cannot copy column {columnNVP.Key} in list {listColumnToCopy.Key} for consumption ID={consumptionLI["ID"]}", EventLogEntryType.Error);
               }
             }
 
@@ -601,7 +678,7 @@ namespace Invoice_Run
             }
             catch
             {
-              EventLog.WriteEntry(evtLogSrc, string.Format("Error calculate round up for rate ID={0}, consumption ID={1}", rateItem["ID"], consumptionLI["ID"]), EventLogEntryType.Error);
+              EventLog.WriteEntry(evtLogSrc, $"Error calculate round up for rate ID={rateItem["ID"]}, consumption ID={consumptionLI["ID"]}", EventLogEntryType.Error);
             }
             chgItem["Amount"] = (double)rateItem["Unit_x0020_Price"] * normalizedQty;
           }
@@ -665,7 +742,7 @@ namespace Invoice_Run
             if (g.LoginName == (groupPrefix + chargeLI["Account"].ToString()))
             {
               var rdb = new RoleDefinitionBindingCollection(cc);
-              rdb.Add(restReadRD);
+              rdb.Add(restReadRD != null ? restReadRD : readRD);
               chargeLI.RoleAssignments.Add(g, rdb);
               break;
             }
@@ -673,13 +750,13 @@ namespace Invoice_Run
           cc.ExecuteQuery();
         }
         var runEndTime = DateTime.Now;
-        EventLog.WriteEntry(evtLogSrc, string.Format("Run ended {0}, lasting {1} minutes.", runEndTime.ToString(), (runEndTime - runStartTime).TotalMinutes.ToString("0.00")), EventLogEntryType.Information);
+        EventLog.WriteEntry(evtLogSrc, $"Run ended {runEndTime}, lasting {(runEndTime - runStartTime).TotalMinutes.ToString("0.00")} minutes.", EventLogEntryType.Information);
         System.IO.File.Delete(lastRunFileName);
         System.IO.File.WriteAllLines(lastRunFileName, new string[] { billingCycleStart.ToShortDateString(), runStartTime.ToString() });
       }
       catch (Exception ex)
       {
-        EventLog.WriteEntry(evtLogSrc, string.Format("{0}\n", ex.ToString()), EventLogEntryType.Error);
+        EventLog.WriteEntry(evtLogSrc, $"{ex}", EventLogEntryType.Error);
         throw;
       }
     }

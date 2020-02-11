@@ -4,6 +4,7 @@ Set Charge Permissions
 *SetChargePermissions.exe* is a utility intended to be run manually to
 1. Reset the permission to the list and then break the permission inheritance of each charge item created in affected billing cycle. 
 2. For each charge item in affected billing cycle, grant group *"&lt;prefix_of_group&gt;&lt;account&gt;"* read-only access.
+3. Output a list of accounts that don't have corresponding group *"&lt;prefix_of_group&gt;&lt;account&gt;"*.
 
 *SetChargePermissions.exe* expects following call syntax:
 
@@ -12,12 +13,12 @@ Set Charge Permissions
 ```
 where \<URL> points to the Sharepoint site and [options] are
 
+* -c|--cycle_start_date=\<date>
+	
+	Billing cycle start date in the format YYYY-MM-DD. Mandatory argument with no default value.
 * -p|--prefix_of_group=\<string>
 	
 	Prefix of the account groups. The prefix is useful to prevent group name conflicts with other groups defined in same site collection
-* -c|--cycle_start_date=\<date>
-	
-	Billing cycle start date in the format YYYY-MM-DD.
 * -h|--charges_list_name=\<string>
 
 	Name of charges list if renamed.

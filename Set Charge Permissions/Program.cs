@@ -27,7 +27,7 @@ namespace Set_Charge_Permissions
         string domain = null;
         string pwd = null;
         var missingSecurityGroups = new HashSet<string>();
-        DateTime billingCycleStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1, 0, 0, 0, DateTimeKind.Local);
+        DateTime? billingCycleStart = null;
 
         var options = new OptionSet(){
                     {"p|prefix_of_group=", v => groupPrefix = v}
@@ -41,6 +41,11 @@ namespace Set_Charge_Permissions
                     ,{"w|password=", v=> pwd = v}
                 };
         List<String> extraArgs = options.Parse(args);
+        if (billingCycleStart == null)
+        {
+          Console.Error.WriteLine($"Argument -c|--cycle_start_date is mandatory.");
+          System.Environment.Exit(1);
+        }
         ServicePointManager.ServerCertificateValidationCallback = MyCertHandler;
         ClientContext cc = null;
         switch (authScheme)
@@ -75,7 +80,7 @@ namespace Set_Charge_Permissions
    <Where>
       <Eq>
          <FieldRef Name='Cycle' />
-         <Value Type='DateTime'>{billingCycleStart.ToString("yyyy-MM-dd")}</Value>
+         <Value Type='DateTime'>{((DateTime)billingCycleStart).ToString("yyyy-MM-dd")}</Value>
       </Eq>
    </Where>
 </Query></View>";
@@ -131,10 +136,10 @@ namespace Set_Charge_Permissions
         if (missingSecurityGroups.Count > 0)
         {
           Console.WriteLine($"Following accounts miss corresponding sharepoint groups");
-        }
-        foreach (String acct in missingSecurityGroups)
-        {
-          Console.WriteLine($"{acct}");
+          foreach (String acct in missingSecurityGroups)
+          {
+            Console.WriteLine($"{acct}");
+          }
         }
         var runEndTime = DateTime.Now;
         Console.WriteLine($"Run ended {runEndTime}, lasting {(runEndTime - runStartTime).TotalMinutes.ToString("0.00")} minutes.");

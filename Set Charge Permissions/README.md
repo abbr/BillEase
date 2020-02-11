@@ -1,7 +1,7 @@
 Set Charge Permissions
 ==========================
 
-*SetChargePermissions.exe* is a utility to
+*SetChargePermissions.exe* is a utility intended to be run manually to
 1. Reset the permission to the list and then break the permission inheritance of each charge item created in affected billing cycle. 
 2. For each charge item in affected billing cycle, grant group *"&lt;prefix_of_group&gt;&lt;account&gt;"* read-only access.
 
@@ -53,11 +53,13 @@ Examples:
   Run on charge items with billing cycle start date 2018-01-01. Authenticate to Sharepoint with ADFS.
 
 ## System Requirements and Access Privileges
-* Site collection administrator level of access to any edition of SharePoint 2013 or above.
-* Optionally Git client to download package
+* Windows 10
+* Site collection administrator to the SharePoint site.
+* (optionally) Git client to download package
 
 ## Installation
-1. Use *Download Zip* button to download the latest version, or use Git client to clone the git repo. 
+1. Use *Download Zip* button to download and extract the latest version, or use Git client to clone the git repo. 
+2. Open a Command Prompt window, *cd* to  *BillEase\Set Charge Permissions\bin\Debug* folder.
 
 ## License
 

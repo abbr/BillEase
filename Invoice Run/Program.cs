@@ -733,10 +733,12 @@ namespace Invoice_Run
         cc.ExecuteQuery();
         foreach (var chargeLI in chargesLIC)
         {
-          if (!chargeLI.HasUniqueRoleAssignments)
+          if (chargeLI.HasUniqueRoleAssignments)
           {
-            chargeLI.BreakRoleInheritance(true, false);
+            chargeLI.ResetRoleInheritance();
+            cc.ExecuteQuery();
           }
+          chargeLI.BreakRoleInheritance(true, false);
           foreach (var g in gc)
           {
             if (g.LoginName == (groupPrefix + chargeLI["Account"].ToString()))

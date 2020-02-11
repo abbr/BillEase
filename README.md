@@ -159,8 +159,9 @@ When invoked, *Invoice Run.exe* performs following tasks:
 4. For each fixed consumption item with service period overlapping the affected billing period, either create a new or update an existing consumption item.
 5. For each consumption item in affected billing cycle, either create a new or update an existing charge item. The values of charge item are copied or calculated using data directly or indirectly obtained from consumption item as described in [Charges](#charges) list above. If option *incremental* is true, then only consumption items modified since last run in affected billing cycle are included.
 6. If the billing cycle is closed, then break the permission inheritance of each consumption item in affected billing cycle if not already done so. Then convert all *Contribute* permissions to *Read*.
-7. Break the permission inheritance of each charge item created in affected billing cycle if not already done so. 
-8. For each charge item in affected billing cycle, grant group *"&lt;prefix&gt;&lt;account&gt;"* read-only access if not already done so.
+7. Reset the permission to the list and then break the permission inheritance of each charge item created in affected billing cycle. 
+8. For each charge item in affected billing cycle, grant group *"&lt;prefix_of_group&gt;&lt;account&gt;"* read-only access if not already done so.
+
 
 *Invoice Run.exe* expects following call syntax:
 

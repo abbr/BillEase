@@ -3,7 +3,7 @@ Set Charge Permissions
 
 *SetChargePermissions.exe* is a utility to
 1. Reset the permission to the list and then break the permission inheritance of each charge item created in affected billing cycle. 
-2. For each charge item in affected billing cycle, grant group *"&lt;prefix-of-group&gt;&lt;account&gt;"* read-only access.
+2. For each charge item in affected billing cycle, grant group *"&lt;prefix_of_group&gt;&lt;account&gt;"* read-only access.
 
 *SetChargePermissions.exe* expects following call syntax:
 

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.28010.2050
+VisualStudioVersion = 15.0.26430.15
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Invoice Run", "Invoice Run\Invoice Run.csproj", "{DC07196E-B9E3-493A-A8A1-AB70E4BBC9DC}"
 EndProject
@@ -19,6 +19,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Service Billing.wsp = Service Billing.wsp
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Set Charge Permissions", "Set Charge Permissions\Set Charge Permissions.csproj", "{E2998B1F-51C7-4EA1-BF80-19639714C7AB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,6 +31,10 @@ Global
 		{DC07196E-B9E3-493A-A8A1-AB70E4BBC9DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC07196E-B9E3-493A-A8A1-AB70E4BBC9DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC07196E-B9E3-493A-A8A1-AB70E4BBC9DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2998B1F-51C7-4EA1-BF80-19639714C7AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2998B1F-51C7-4EA1-BF80-19639714C7AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2998B1F-51C7-4EA1-BF80-19639714C7AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2998B1F-51C7-4EA1-BF80-19639714C7AB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

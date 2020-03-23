@@ -325,7 +325,7 @@ namespace Invoice_Run
           </IsNull>
           <Lt>
              <FieldRef Name='Service_x0020_Start' />
-             <Value Type='DateTime'>{nextBillingcycleStart.ToString("yyyy - MM - dd")}</Value>
+             <Value Type='DateTime'>{nextBillingcycleStart.ToString("yyyy-MM-dd")}</Value>
           </Lt>
         </Or>
         <Or>

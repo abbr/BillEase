@@ -103,7 +103,7 @@ Items in *Charges* list are created by *Invoice Run.exe*. There is a one-to-one 
   * Denominator - copied from *Rates* referenced by the corresponding *Consumptions* item
   * UOM - copied from *Rates* referenced by the corresponding *Consumptions* item
   * Quantity - copied from *Consumptions*
-  * Amount - either copied from *Consumptions* or, in absence of value, calculated using formula *Unit Price\*Ceiling(Quantity/Denominator)*
+  * Amount - either copied from *Consumptions* or, in absence of value, calculated using formula *Unit Price×Ceiling(Quantity÷Denominator)* if round up or *Unit Price×Quantity÷Denominator* otherwise
   * Consumption Ref  - a hidden field referencing to the corresponding *Consumptions* item
 
 Notice that except for the hidden *Consumption Ref* column, all columns are copied from, rather than referencing to other lists. This *de-normalization* process prevents historical billing records from altering by factors such as account re-naming or price adjustment, resulting in improved accountability.
